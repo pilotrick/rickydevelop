@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!-- Automated Orders Tree View -->
+    <record id="view_pi_automated_order_tree" model="ir.ui.view">
+        <field name="name">pi.automated.order.tree</field>
+        <field name="model">pi.automated.order</field>
+        <field name="arch" type="xml">
+            <list string="Órdenes Automatizadas" decoration-danger="urgency=='critical'" decoration-warning="urgency=='high'">
+                <header>
+                    <button name="generate_automated_suggestions" type="object" string="🔄 Generar Sugerencias Automáticas" class="btn-primary"/>
+                </header>
+                <field name="name"/>
+                <field name="date"/>
+                <field name="product_id"/>
+                <field name="suggested_qty"/>
+                <field name="supplier_id"/>
+                <field name="urgency"/>
+                <field name="state" widget="badge" decoration-success="state=='created'" decoration-info="state=='approved'" decoration-muted="state=='rejected'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Automated Orders Form View -->
+    <record id="view_pi_automated_order_form" model="ir.ui.view">
+        <field name="name">pi.automated.order.form</field>
+        <field name="model">pi.automated.order</field>
+        <field name="arch" type="xml">
+            <form string="Orden Automatizada">
+                <header>
+                    <button name="action_approve" string="Aprobar y Crear PO" type="object" class="btn-primary" invisible="state not in ['draft', 'suggested']"/>
+                    <button name="action_reject" string="Rechazar" type="object" class="btn-secondary" invisible="state not in ['draft', 'suggested']"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,suggested,approved,created"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_purchase_order" type="object" class="oe_stat_button" icon="fa-shopping-cart" invisible="not purchase_order_id">
+                            <field name="purchase_order_id" widget="statinfo" string="Orden de Compra"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="product_id"/>
+                            <field name="suggested_qty"/>
+                            <field name="supplier_id"/>
+                            <field name="urgency"/>
+                        </group>
+                        <group>
+                            <field name="current_stock"/>
+                            <field name="reorder_point"/>
+                            <field name="lead_time_days"/>
+                            <field name="daily_usage"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="reason" colspan="2"/>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Automated Orders Action -->
+    <record id="action_pi_automated_order" model="ir.actions.act_window">
+        <field name="name">Órdenes Automatizadas</field>
+        <field name="res_model">pi.automated.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_suggested': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay sugerencias de órdenes automatizadas
+            </p>
+            <p>
+                El sistema generará automáticamente sugerencias de compra cuando los productos alcancen su punto de reorden.
+            </p>
+        </field>
+    </record>
+
+    <!-- Reorder Optimization Tree View -->
+    <record id="view_pi_reorder_optimization_tree" model="ir.ui.view">
+        <field name="name">pi.reorder.optimization.tree</field>
+        <field name="model">pi.reorder.optimization</field>
+        <field name="arch" type="xml">
+            <list string="Optimización de Reorden" decoration-danger="stockout_risk &gt; 50" decoration-warning="stockout_risk &gt; 20">
+                <header>
+                    <button name="action_generate_all_optimizations" type="object" string="🔄 Regenerar TODOS los Productos" class="btn-primary"/>
+                </header>
+                <field name="date"/>
+                <field name="product_id"/>
+                <field name="current_rop" string="ROP Actual"/>
+                <field name="optimized_rop" string="ROP Optimizado"/>
+                <field name="current_eoq" string="EOQ Actual" optional="show"/>
+                <field name="optimized_eoq" string="EOQ Optimizado" optional="show"/>
+                <field name="current_safety_stock" string="Safety Stock Actual" optional="show"/>
+                <field name="optimized_safety_stock" string="Safety Stock Optim." optional="show"/>
+                <field name="stockout_risk" string="Riesgo de Rotura (%)" widget="progressbar"/>
+                <field name="carrying_cost" string="Costo Mantenim." optional="hide"/>
+                <field name="ordering_cost" string="Costo Pedido" optional="hide"/>
+                <field name="total_cost" string="Costo Total"/>
+                <field name="applied" widget="boolean_toggle"/>
+                <button name="action_apply_optimization" type="object" string="✅ Aplicar" class="btn-success btn-sm" invisible="applied"/>
+            </list>
+        </field>
+    </record>
+    
+    <!-- Reorder Optimization Form View -->
+    <record id="view_pi_reorder_optimization_form" model="ir.ui.view">
+        <field name="name">pi.reorder.optimization.form</field>
+        <field name="model">pi.reorder.optimization</field>
+        <field name="arch" type="xml">
+            <form string="Optimización de Reorden">
+                <sheet>
+                    <group>
+                        <group string="📦 Producto">
+                            <field name="product_id"/>
+                            <field name="date"/>
+                        </group>
+                        <group string="📊 Estado">
+                            <field name="stockout_risk" widget="progressbar"/>
+                            <field name="applied"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="📉 Valores Actuales">
+                            <field name="current_rop"/>
+                            <field name="current_eoq"/>
+                            <field name="current_safety_stock"/>
+                        </group>
+                        <group string="📈 Valores Optimizados">
+                            <field name="optimized_rop"/>
+                            <field name="optimized_eoq"/>
+                            <field name="optimized_safety_stock"/>
+                        </group>
+                    </group>
+                    <group string="💰 Costos">
+                        <field name="carrying_cost"/>
+                        <field name="ordering_cost"/>
+                        <field name="total_cost"/>
+                    </group>
+                    <group string="💡 Recomendación">
+                        <field name="recommendation" nolabel="1" colspan="2"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Contract Performance Tree View -->
+    <record id="view_pi_contract_performance_tree" model="ir.ui.view">
+        <field name="name">pi.contract.performance.tree</field>
+        <field name="model">pi.contract.performance</field>
+        <field name="arch" type="xml">
+            <list string="Rendimiento de Contratos" decoration-warning="state=='expiring'" decoration-muted="state=='expired'">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="contract_value"/>
+                <field name="utilization_percent" widget="progressbar"/>
+                <field name="savings_amount"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Contract Performance Form View -->
+    <record id="view_pi_contract_performance_form" model="ir.ui.view">
+        <field name="name">pi.contract.performance.form</field>
+        <field name="model">pi.contract.performance</field>
+        <field name="arch" type="xml">
+            <form string="Contrato">
+                <header>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                        </group>
+                        <group>
+                            <field name="contract_value"/>
+                            <field name="utilized_value"/>
+                            <field name="utilization_percent" widget="progressbar"/>
+                            <field name="savings_amount"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Contract Performance Action -->
+    <record id="action_pi_contract_performance" model="ir.actions.act_window">
+        <field name="name">Rendimiento de Contratos</field>
+        <field name="res_model">pi.contract.performance</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Reorder Optimization Action -->
+    <record id="action_pi_reorder_optimization" model="ir.actions.act_window">
+        <field name="name">Optimización de Reorden</field>
+        <field name="res_model">pi.reorder.optimization</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

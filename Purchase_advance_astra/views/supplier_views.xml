@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<record id="view_pi_supplier_scorecard_tree" model="ir.ui.view">
+        <field name="name">pi.supplier.scorecard.tree</field>
+        <field name="model">pi.supplier.scorecard</field>
+        <field name="arch" type="xml">
+            <list string="Cuadros de Mando de Proveedores" decoration-success="overall_score &gt;= 8" decoration-warning="overall_score &lt; 6 and overall_score &gt;= 4" decoration-danger="overall_score &lt; 4">
+                <header>
+                    <button name="action_generate_all_scorecards" type="object" string="🔄 Regenerar TODOS los Proveedores" class="btn-primary"/>
+                </header>
+                <field name="partner_id"/>
+                <field name="date"/>
+                <field name="overall_score" string="Puntuación Total" widget="progressbar"/>
+                <field name="score_quality" string="Calidad"/>
+                <field name="score_delivery" string="Entrega"/>
+                <field name="score_price" string="Precio"/>
+                <field name="score_service" string="Servicio"/>
+                <field name="score_innovation" string="Innovación"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pi_supplier_scorecard_form" model="ir.ui.view">
+        <field name="name">pi.supplier.scorecard.form</field>
+        <field name="model">pi.supplier.scorecard</field>
+        <field name="arch" type="xml">
+            <form string="Cuadro de Mando">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="partner_id" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="overall_score" widget="progressbar"/>
+                        </group>
+                    </group>
+                    <group string="Detalle de Puntuación">
+                        <group>
+                            <field name="score_quality"/>
+                            <field name="score_delivery"/>
+                            <field name="score_price"/>
+                        </group>
+                        <group>
+                            <field name="score_service"/>
+                            <field name="score_innovation"/>
+                        </group>
+                    </group>
+                    <group string="Criterios Adicionales">
+                        <field name="properties" nolabel="1"/>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_partner_form_inherit_pi" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.pi</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="action_view_scorecards" type="object" class="oe_stat_button" icon="fa-tachometer">
+                    <field name="scorecard_count" widget="statinfo" string="Evaluaciones"/>
+                </button>
+            </div>
+            <notebook position="inside">
+                <page string="Inteligencia de Compras">
+                    <group>
+                        <group string="Clasificación">
+                            <field name="is_strategic"/>
+                            <field name="supplier_rank"/>
+                            <field name="risk_level"/>
+                        </group>
+                        <group string="Rendimiento">
+                            <field name="supplier_score" widget="progressbar"/>
+                        </group>
+                    </group>
+                    <field name="scorecard_ids">
+                        <list string="Historial de Evaluaciones">
+                            <field name="date"/>
+                            <field name="overall_score"/>
+                            <field name="score_quality"/>
+                            <field name="score_delivery"/>
+                        </list>
+                    </field>
+                </page>
+            </notebook>
+        </field>
+    </record>
+
+    <!-- Supplier Scorecard Action -->
+    <record id="action_pi_supplier_scorecard" model="ir.actions.act_window">
+        <field name="name">Cuadros de Mando de Proveedores</field>
+        <field name="res_model">pi.supplier.scorecard</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

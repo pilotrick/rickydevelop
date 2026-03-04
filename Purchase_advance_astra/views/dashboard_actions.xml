@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+        <!-- Master Dashboard Action - EL ÚNICO DASHBOARD -->
+        <record id="action_purchase_intelligence_dashboard" model="ir.actions.client">
+            <field name="name">Centro de Inteligencia de Compras</field>
+            <field name="tag">purchase_intelligence.master_dashboard</field>
+        </record>
+
+        <!-- Server Action: Poblar TODOS los datos automáticamente -->
+        <record id="action_populate_all_data" model="ir.actions.server">
+            <field name="name">Poblar Todos los Datos Automaticamente</field>
+            <field name="model_id" ref="Purchase_advance_astra.model_purchase_intelligence_kpi"/>
+            <field name="state">code</field>
+            <field name="code">
+# 1. Generar optimizaciones de reorden para TODOS los productos
+env['pi.reorder.optimization'].action_generate_all_optimizations()
+
+# 2. Generar optimizaciones de reorden POR ALMACÉN
+env['pi.warehouse.reorder.optimization'].action_generate_warehouse_optimizations()
+
+# 3. Generar scorecards para TODOS los proveedores
+env['pi.supplier.scorecard'].action_generate_all_scorecards()
+
+# 4. Generar pronosticos de demanda
+env['purchase.intelligence.forecast'].action_update_forecasts()
+
+# 5. Calcular KPIs
+env['purchase.intelligence.kpi'].action_calculate_daily_warehouse_kpis()
+
+# Contar registros creados para feedback
+reorder_count = env['pi.reorder.optimization'].search_count([])
+warehouse_reorder_count = env['pi.warehouse.reorder.optimization'].search_count([])
+forecast_count = env['purchase.intelligence.forecast'].search_count([])
+product_count = env['product.product'].search_count([('is_storable', '=', True), ('purchase_ok', '=', True)])
+warehouse_count = env['stock.warehouse'].search_count([])
+
+# Retornar notificación de éxito
+action = {
+    'type': 'ir.actions.client',
+    'tag': 'display_notification',
+    'params': {
+        'title': '✅ DATOS POBLADOS EXITOSAMENTE',
+        'message': f'📦 Productos elegibles: {product_count}\n🏭 Almacenes: {warehouse_count}\n⚡ Optimizaciones Generales: {reorder_count}\n🏭 Optimizaciones por Almacén: {warehouse_reorder_count}\n📊 Pronósticos: {forecast_count}\n\nSi "Optimizaciones" sigue en 0, verifique que sus productos tengan:\n- Tipo = "Producto almacenable"\n- "Puede ser Comprado" = Sí',
+        'type': 'success',
+        'sticky': True,
+        'next': {
+            'type': 'ir.actions.client',
+            'tag': 'reload',
+        }
+    }
+}
+            </field>
+        </record>
+
+</odoo>

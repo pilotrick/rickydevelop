@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- CENTRO DE COMANDO DE REORDEN - ¿QUÉ PEDIR AHORA?                        -->
+    <!-- Vista Principal Unificada para Gestión de Compras                        -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Vista Lista: Centro de Comando de Reorden -->
+    <record id="view_pi_reorder_command_tree" model="ir.ui.view">
+        <field name="name">pi.reorder.command.tree</field>
+        <field name="model">pi.reorder.command</field>
+        <field name="arch" type="xml">
+            <list string="Centro de Comando de Reorden" 
+                  decoration-danger="urgency_level=='critical'" 
+                  decoration-warning="urgency_level=='high'"
+                  decoration-info="urgency_level=='medium'"
+                  multi_edit="1">
+                
+                <!-- Columnas Principales -->
+                <field name="urgency_level" widget="badge" 
+                       decoration-danger="urgency_level=='critical'" 
+                       decoration-warning="urgency_level=='high'"
+                       decoration-info="urgency_level=='medium'"
+                       decoration-success="urgency_level=='low'"/>
+                <field name="product_id"/>
+                <field name="category_id" optional="hide"/>
+                <field name="supplier_id"/>
+                
+                <!-- Stock -->
+                <field name="total_stock" decoration-danger="total_stock &lt;= 0" decoration-warning="total_stock &lt; 10"/>
+                <field name="warehouses_with_zero_stock" string="Almacenes sin Stock" decoration-danger="warehouses_with_zero_stock &gt; 0"/>
+                <field name="warehouses_with_low_stock" string="Almacenes Bajos" decoration-warning="warehouses_with_low_stock &gt; 0"/>
+                
+                <!-- Demanda -->
+                <field name="daily_usage" optional="show"/>
+                <field name="days_until_stockout" string="Días Restantes" 
+                       decoration-danger="days_until_stockout &lt; 7"
+                       decoration-warning="days_until_stockout &lt; 14"/>
+                
+                <!-- Pipeline de Ventas -->
+                <field name="pending_quotations_qty" string="En Cotizaciones" optional="show"/>
+                <field name="confirmed_orders_qty" string="Confirmado Pendiente" optional="show"/>
+                <field name="total_demand" string="Demanda Total"/>
+                
+                <!-- Riesgo -->
+                <field name="lost_sales_risk_qty" string="Qty Riesgo" 
+                       decoration-danger="lost_sales_risk_qty &gt; 0" optional="show"/>
+                <field name="lost_sales_risk_amount" widget="monetary" string="$ Riesgo" 
+                       decoration-danger="lost_sales_risk_amount &gt; 0"/>
+                
+                <!-- Recomendación -->
+                <field name="suggested_order_qty" string="Qty Sugerida" decoration-info="suggested_order_qty &gt; 0"/>
+                <field name="suggested_order_amount" widget="monetary" string="Monto" optional="show"/>
+                <field name="lead_time_days" string="Lead Time" optional="hide"/>
+                
+                <!-- Acciones -->
+                <field name="state" widget="badge"/>
+                <field name="priority_score" optional="hide"/>
+                
+                <!-- Botones de Acción -->
+                <button name="action_create_purchase_order" type="object" 
+                        string="Crear OC" icon="fa-shopping-cart" 
+                        class="btn-primary"
+                        invisible="state != 'pending' or suggested_order_qty &lt;= 0"/>
+                <button name="action_ignore" type="object" 
+                        string="Ignorar" icon="fa-times" 
+                        class="btn-link"
+                        invisible="state != 'pending'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista Kanban: Centro de Comando de Reorden -->
+    <record id="view_pi_reorder_command_kanban" model="ir.ui.view">
+        <field name="name">pi.reorder.command.kanban</field>
+        <field name="model">pi.reorder.command</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_dashboard" default_group_by="urgency_level" quick_create="false">
+                <field name="product_id"/>
+                <field name="supplier_id"/>
+                <field name="total_stock"/>
+                <field name="days_until_stockout"/>
+                <field name="total_demand"/>
+                <field name="lost_sales_risk_amount"/>
+                <field name="suggested_order_qty"/>
+                <field name="urgency_level"/>
+                <field name="priority_score"/>
+                <field name="state"/>
+                <field name="warehouse_detail_html"/>
+                
+                <progressbar field="urgency_level" colors='{"critical": "danger", "high": "warning", "medium": "info", "low": "success"}'/>
+                
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <!-- Header -->
+                            <div class="o_kanban_record_top mb-2">
+                                <div class="o_kanban_record_headings">
+                                    <strong class="o_kanban_record_title">
+                                        <field name="product_id"/>
+                                    </strong>
+                                </div>
+                                <span class="float-end">
+                                    <field name="state" widget="badge"/>
+                                </span>
+                            </div>
+                            
+                            <!-- Proveedor -->
+                            <div class="text-muted small mb-2">
+                                <i class="fa fa-truck"/> <field name="supplier_id"/>
+                            </div>
+                            
+                            <!-- Métricas Principales -->
+                            <div class="row g-1 mb-2">
+                                <div class="col-6">
+                                    <div class="border rounded p-1 text-center">
+                                        <small class="text-muted d-block">Stock</small>
+                                        <strong t-attf-class="#{record.total_stock.raw_value &lt;= 0 ? 'text-danger' : (record.total_stock.raw_value &lt; 10 ? 'text-warning' : 'text-success')}">
+                                            <field name="total_stock"/>
+                                        </strong>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="border rounded p-1 text-center">
+                                        <small class="text-muted d-block">Días</small>
+                                        <strong t-attf-class="#{record.days_until_stockout.raw_value &lt; 7 ? 'text-danger' : (record.days_until_stockout.raw_value &lt; 14 ? 'text-warning' : 'text-success')}">
+                                            <field name="days_until_stockout" widget="float" options="{'precision': 1}"/>
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Demanda y Riesgo -->
+                            <div class="row g-1 mb-2">
+                                <div class="col-6">
+                                    <div class="border rounded p-1 text-center">
+                                        <small class="text-muted d-block">Demanda</small>
+                                        <strong><field name="total_demand"/></strong>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="border rounded p-1 text-center">
+                                        <small class="text-muted d-block">$ Riesgo</small>
+                                        <strong class="text-danger">
+                                            <field name="lost_sales_risk_amount" widget="monetary"/>
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Recomendación -->
+                            <div class="bg-info bg-opacity-10 rounded p-2 mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">Pedir:</span>
+                                    <strong class="text-primary"><field name="suggested_order_qty"/> unidades</strong>
+                                </div>
+                            </div>
+                            
+                            <!-- Almacenes -->
+                            <div class="small border-top pt-2">
+                                <field name="warehouse_detail_html" widget="html"/>
+                            </div>
+                            
+                            <!-- Acciones -->
+                            <div class="o_kanban_record_bottom mt-2">
+                                <div class="oe_kanban_bottom_left">
+                                    <span class="badge" t-attf-class="#{record.urgency_level.raw_value == 'critical' ? 'bg-danger' : (record.urgency_level.raw_value == 'high' ? 'bg-warning' : (record.urgency_level.raw_value == 'medium' ? 'bg-info' : 'bg-success'))}">
+                                        <field name="urgency_level"/>
+                                    </span>
+                                </div>
+                                <div class="oe_kanban_bottom_right">
+                                    <button t-if="record.state.raw_value == 'pending'" 
+                                            name="action_create_purchase_order" type="object" 
+                                            class="btn btn-sm btn-primary">
+                                        <i class="fa fa-shopping-cart"/> Crear OC
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Vista Form: Centro de Comando de Reorden -->
+    <record id="view_pi_reorder_command_form" model="ir.ui.view">
+        <field name="name">pi.reorder.command.form</field>
+        <field name="model">pi.reorder.command</field>
+        <field name="arch" type="xml">
+            <form string="Centro de Comando de Reorden">
+                <header>
+                    <button name="action_create_purchase_order" type="object" 
+                            string="🛒 Crear Orden de Compra" class="btn-primary"
+                            invisible="state != 'pending' or suggested_order_qty &lt;= 0"/>
+                    <button name="action_refresh_data" type="object" 
+                            string="🔄 Actualizar Datos" class="btn-secondary"/>
+                    <button name="action_ignore" type="object" 
+                            string="Ignorar" class="btn-link"
+                            invisible="state != 'pending'"/>
+                    <button name="action_reset" type="object" 
+                            string="Reactivar" class="btn-link"
+                            invisible="state == 'pending'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                
+                <sheet>
+                    <!-- Botones de Estadísticas -->
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" icon="fa-cubes">
+                            <field name="total_stock" widget="statinfo" string="Stock Total"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-calendar-times-o">
+                            <field name="days_until_stockout" widget="statinfo" string="Días Restantes"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-exclamation-triangle">
+                            <field name="lost_sales_risk_amount" widget="statinfo" string="$ Riesgo"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-shopping-cart" 
+                                name="%(purchase.purchase_form_action)d" type="action"
+                                invisible="not purchase_order_id">
+                            <field name="purchase_order_id" widget="statinfo" string="OC Creada"/>
+                        </button>
+                    </div>
+                    
+                    <!-- Alerta de Urgencia -->
+                    <div class="alert alert-danger" role="alert" invisible="urgency_level != 'critical'">
+                        <strong>🚨 URGENCIA CRÍTICA:</strong> Este producto requiere acción inmediata. 
+                        Hay riesgo de perder ventas o detener operaciones.
+                    </div>
+                    <div class="alert alert-warning" role="alert" invisible="urgency_level != 'high'">
+                        <strong>⚠️ PRIORIDAD ALTA:</strong> Se recomienda ordenar a la brevedad.
+                    </div>
+                    
+                    <!-- Título -->
+                    <div class="oe_title">
+                        <h1>
+                            <field name="product_id" readonly="1" options="{'no_open': True}"/>
+                        </h1>
+                        <h3 class="text-muted">
+                            <field name="category_id" readonly="1"/>
+                        </h3>
+                    </div>
+                    
+                    <group>
+                        <group string="📦 Información del Producto">
+                            <field name="supplier_id"/>
+                            <field name="lead_time_days"/>
+                            <field name="last_purchase_price" widget="monetary"/>
+                        </group>
+                        <group string="📊 Prioridad">
+                            <field name="urgency_level" widget="badge"/>
+                            <field name="priority_score" widget="progressbar"/>
+                            <field name="last_refresh"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <!-- Pestaña: Stock por Almacén -->
+                        <page string="🏭 Stock por Almacén" name="warehouses">
+                            <group>
+                                <group string="Resumen de Stock">
+                                    <field name="total_stock"/>
+                                    <field name="total_virtual_stock"/>
+                                    <field name="warehouses_with_zero_stock"/>
+                                    <field name="warehouses_with_low_stock"/>
+                                </group>
+                                <group string="Proyección">
+                                    <field name="daily_usage"/>
+                                    <field name="days_until_stockout"/>
+                                    <field name="projected_stockout_date"/>
+                                </group>
+                            </group>
+                            
+                            <separator string="Detalle Visual por Almacén"/>
+                            <field name="warehouse_detail_html" widget="html" nolabel="1"/>
+                            
+                            <separator string="Detalle por Almacén"/>
+                            <field name="warehouse_detail_ids" nolabel="1">
+                                <list editable="bottom">
+                                    <field name="warehouse_id"/>
+                                    <field name="stock_available"/>
+                                    <field name="stock_reserved"/>
+                                    <field name="stock_incoming"/>
+                                    <field name="stock_outgoing"/>
+                                    <field name="daily_usage"/>
+                                    <field name="days_of_stock"/>
+                                    <field name="status" widget="badge"/>
+                                    <field name="needs_reorder" widget="boolean"/>
+                                </list>
+                            </field>
+                        </page>
+                        
+                        <!-- Pestaña: Pipeline de Ventas -->
+                        <page string="📋 Pipeline de Ventas" name="sales_pipeline">
+                            <group>
+                                <group string="Cotizaciones Pendientes">
+                                    <field name="pending_quotations_qty"/>
+                                    <field name="pending_quotations_amount" widget="monetary"/>
+                                </group>
+                                <group string="Órdenes Confirmadas (Sin Entregar)">
+                                    <field name="confirmed_orders_qty"/>
+                                    <field name="confirmed_orders_amount" widget="monetary"/>
+                                </group>
+                            </group>
+                            
+                            <group string="Totales">
+                                <field name="total_demand"/>
+                            </group>
+                            
+                            <div class="alert alert-info" role="alert" invisible="lost_sales_risk_qty &lt;= 0">
+                                <h4 class="alert-heading">⚠️ Riesgo de Ventas Perdidas</h4>
+                                <p>La demanda del pipeline (<field name="total_demand" readonly="1"/> unidades) 
+                                   supera el stock disponible (<field name="total_stock" readonly="1"/> unidades).</p>
+                                <hr/>
+                                <p class="mb-0">
+                                    <strong>Cantidad en riesgo:</strong> <field name="lost_sales_risk_qty" readonly="1"/> unidades<br/>
+                                    <strong>Valor en riesgo:</strong> <field name="lost_sales_risk_amount" widget="monetary" readonly="1"/>
+                                </p>
+                            </div>
+                        </page>
+                        
+                        <!-- Pestaña: Demanda Histórica -->
+                        <page string="📈 Demanda Histórica" name="demand">
+                            <group>
+                                <group string="Ventas Recientes">
+                                    <field name="weekly_sales"/>
+                                    <field name="monthly_sales"/>
+                                </group>
+                                <group string="Promedios">
+                                    <field name="daily_usage"/>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <!-- Pestaña: Recomendación -->
+                        <page string="🎯 Recomendación de Compra" name="recommendation">
+                            <group>
+                                <group string="Cantidad Sugerida">
+                                    <field name="suggested_order_qty" class="oe_inline"/>
+                                    <field name="suggested_order_amount" widget="monetary"/>
+                                </group>
+                                <group string="Información del Proveedor">
+                                    <field name="supplier_id"/>
+                                    <field name="lead_time_days"/>
+                                    <field name="last_purchase_price" widget="monetary"/>
+                                </group>
+                            </group>
+                            
+                            <div class="alert alert-success p-4" role="alert">
+                                <h4>📝 Resumen de la Recomendación</h4>
+                                <p>Basado en el análisis de stock, consumo y pipeline de ventas, 
+                                   se recomienda ordenar:</p>
+                                <h2 class="text-center my-3">
+                                    <field name="suggested_order_qty" readonly="1"/> unidades
+                                </h2>
+                                <p class="text-center text-muted">
+                                    Monto estimado: <field name="suggested_order_amount" widget="monetary" readonly="1"/>
+                                </p>
+                                <hr/>
+                                <p class="mb-0">
+                                    <strong>Proveedor sugerido:</strong> <field name="supplier_id" readonly="1"/><br/>
+                                    <strong>Tiempo de entrega estimado:</strong> <field name="lead_time_days" readonly="1"/> días
+                                </p>
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+                
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista Búsqueda -->
+    <record id="view_pi_reorder_command_search" model="ir.ui.view">
+        <field name="name">pi.reorder.command.search</field>
+        <field name="model">pi.reorder.command</field>
+        <field name="arch" type="xml">
+            <search string="Buscar en Centro de Comando">
+                <field name="product_id"/>
+                <field name="supplier_id"/>
+                <field name="category_id"/>
+                <field name="urgency_level"/>
+                <field name="state"/>
+                
+                <filter string="Pendientes" name="pending" domain="[('state', '=', 'pending')]"/>
+                <filter string="OC Creadas" name="po_created" domain="[('state', '=', 'po_created')]"/>
+                <separator/>
+                
+                <filter string="Urgencia" name="group_urgency" context="{'group_by': 'urgency_level'}"/>
+                <filter string="Proveedor" name="group_supplier" context="{'group_by': 'supplier_id'}"/>
+                <filter string="Categoría" name="group_category" context="{'group_by': 'category_id'}"/>
+                <filter string="Estado" name="group_state" context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vista Pivot -->
+    <record id="view_pi_reorder_command_pivot" model="ir.ui.view">
+        <field name="name">pi.reorder.command.pivot</field>
+        <field name="model">pi.reorder.command</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Reorden">
+                <field name="category_id" type="row"/>
+                <field name="supplier_id" type="col"/>
+                <field name="suggested_order_qty" type="measure"/>
+                <field name="suggested_order_amount" type="measure"/>
+                <field name="lost_sales_risk_amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Vista Graph -->
+    <record id="view_pi_reorder_command_graph" model="ir.ui.view">
+        <field name="name">pi.reorder.command.graph</field>
+        <field name="model">pi.reorder.command</field>
+        <field name="arch" type="xml">
+            <graph string="Análisis de Reorden" type="bar">
+                <field name="urgency_level"/>
+                <field name="suggested_order_amount" type="measure"/>
+                <field name="lost_sales_risk_amount" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Acción Principal -->
+    <record id="action_pi_reorder_command" model="ir.actions.act_window">
+        <field name="name">🚨 ¿Qué Pedir Ahora?</field>
+        <field name="res_model">pi.reorder.command</field>
+        <field name="view_mode">kanban,list,form,pivot,graph</field>
+        <field name="context">{
+            'search_default_pending': 1,
+            'search_default_group_urgency': 1
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                ¡Excelente! No hay productos que requieran reorden urgente.
+            </p>
+            <p>
+                Este centro de comando muestra todos los productos que necesitan 
+                ser ordenados, priorizados por urgencia y riesgo de ventas perdidas.
+            </p>
+            <p>
+                <strong>Sugerencia:</strong> Ejecute "Generar Análisis" para actualizar los datos.
+            </p>
+        </field>
+    </record>
+
+    <!-- Acción para Crear OC en Lote -->
+    <record id="action_pi_reorder_command_bulk_po" model="ir.actions.server">
+        <field name="name">Crear OC para Seleccionados</field>
+        <field name="model_id" ref="model_pi_reorder_command"/>
+        <field name="binding_model_id" ref="model_pi_reorder_command"/>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    action = records.action_create_bulk_purchase_orders()
+        </field>
+    </record>
+
+    <!-- Acción para Generar/Actualizar Centro de Comando -->
+    <record id="action_generate_reorder_commands" model="ir.actions.server">
+        <field name="name">Generar Análisis de Reorden</field>
+        <field name="model_id" ref="model_pi_reorder_command"/>
+        <field name="state">code</field>
+        <field name="code">
+action = model.action_generate_reorder_commands()
+        </field>
+    </record>
+
+</odoo>

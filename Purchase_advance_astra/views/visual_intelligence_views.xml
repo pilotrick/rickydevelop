@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+    <!-- VISTA DE INTELIGENCIA VISUAL EN PRODUCTO - RESUMEN EJECUTIVO -->
+    <!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+    
+    <record id="view_product_template_form_visual_intelligence" model="ir.ui.view">
+        <field name="name">product.template.form.visual.intelligence</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="Purchase_advance_astra.view_product_template_form_inherit_pi"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='stock_intelligence']" position="before">
+                <page string="🎯 Resumen Ejecutivo" name="executive_summary">
+                    <div class="alert alert-info mb-3" role="alert">
+                        <strong>💡 Análisis Automático:</strong> Este resumen te dice exactamente qué hacer.
+                    </div>
+                    
+                    <!-- DECISION SUMMARY -->
+                    <group>
+                        <group string="🚦 Estado del Producto">
+                            <div class="o_field_widget o_read_only_modifier">
+                                <div class="pi-decision-panel">
+                                    <!-- Critical Status -->
+                                    <div class="pi-status-box" style="background: linear-gradient(135deg, #fee2e2, #fff); border-left: 4px solid #dc2626; padding: 16px; border-radius: 8px; margin-bottom: 12px;">
+                                        <div class="d-flex align-items-center">
+                                            <div style="width: 48px; height: 48px; background: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">
+                                                <i class="fa fa-bolt"/>
+                                            </div>
+                                            <div style="margin-left: 16px;">
+                                                <div style="font-size: 14px; font-weight: 700; color: #1f2937;">
+                                                    <field name="stockout_risk" widget="badge"
+                                                           decoration-danger="stockout_risk in ('critical', 'high')"
+                                                           decoration-warning="stockout_risk == 'medium'"
+                                                           decoration-success="stockout_risk in ('low', 'none')"/>
+                                                </div>
+                                                <div style="font-size: 12px; color: #6b7280;">
+                                                    Riesgo de Rotura de Stock
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Action Card -->
+                                    <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                                        <h5 style="font-size: 12px; text-transform: uppercase; color: #6b7280; margin-bottom: 12px;">
+                                            <i class="fa fa-lightbulb-o"/> Recomendación
+                                        </h5>
+                                        <div style="font-size: 16px; font-weight: 600; color: #1f2937;">
+                                            <t t-if="record.needs_reorder.raw_value">
+                                                ⚡ PEDIR AHORA - <field name="suggested_order_qty"/> unidades
+                                            </t>
+                                            <t t-else="">
+                                                <t t-if="record.days_of_stock.value &lt; 14">
+                                                    👀 MONITOREAR - Stock bajo
+                                                </t>
+                                                <t t-else="">
+                                                    ✅ OK - Stock saludable
+                                                </t>
+                                            </t>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Quick Stats Grid -->
+                                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                                        <div style="text-align: center; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                                            <div style="font-size: 10px; color: #6b7280; text-transform: uppercase;">Stock</div>
+                                            <div style="font-size: 24px; font-weight: 700;">
+                                                <field name="qty_available"/>
+                                            </div>
+                                        </div>
+                                        <div style="text-align: center; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                                            <div style="font-size: 10px; color: #6b7280; text-transform: uppercase;">Días Stock</div>
+                                            <div style="font-size: 24px; font-weight: 700;" t-attf-style="color: {{ record.days_of_stock.value &lt; 7 and '#dc2626' or record.days_of_stock.value &lt; 14 and '#f97316' or '#22c55e' }}">
+                                                <field name="days_of_stock"/>
+                                            </div>
+                                        </div>
+                                        <div style="text-align: center; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                                            <div style="font-size: 10px; color: #6b7280; text-transform: uppercase;">Uso/Día</div>
+                                            <div style="font-size: 24px; font-weight: 700; color: #1f2937;">
+                                                <field name="daily_usage"/>
+                                            </div>
+                                        </div>
+                                        <div style="text-align: center; padding: 12px; background: #f9fafb; border-radius: 8px;">
+                                            <div style="font-size: 10px; color: #6b7280; text-transform: uppercase;">Lead Time</div>
+                                            <div style="font-size: 24px; font-weight: 700; color: #1f2937;">
+                                                <field name="lead_time_days"/>d
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </group>
+                        
+                        <group string="📊 Stock vs Punto de Reorden">
+                            <div class="o_field_widget o_read_only_modifier">
+                                <!-- Visual Gauge -->
+                                <div style="margin-bottom: 16px;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                        <span style="font-size: 11px; color: #6b7280;">0</span>
+                                        <span style="font-size: 11px; color: #f97316;">Punto Reorden: <field name="reorder_point"/></span>
+                                        <span style="font-size: 11px; color: #6b7280;"><field name="max_stock"/></span>
+                                    </div>
+                                    <div style="height: 12px; background: #e5e7eb; border-radius: 6px; position: relative; overflow: hidden;">
+                                        <div t-attf-style="width: {{ (record.qty_available.value / (record.max_stock.value or 100)) * 100 if record.max_stock.value else 0 }}%; height: 100%; border-radius: 6px; background: {{ '#dc2626' if record.qty_available.value &lt;= 0 else '#f97316' if record.qty_available.value &lt; record.reorder_point.value else '#22c55e' }};"/>
+                                        <div t-attf-style="position: absolute; left: {{ (record.reorder_point.value / (record.max_stock.value or 100)) * 100 if record.max_stock.value else 0 }}%; top: -4px; width: 2px; height: 20px; background: #f97316;"/>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                                        <span style="font-size: 10px; color: #dc2626;">🔴 Crítico</span>
+                                        <span style="font-size: 10px; color: #f97316;">🟠 Bajo</span>
+                                        <span style="font-size: 10px; color: #22c55e;">🟢 OK</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Status Labels -->
+                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                    <span class="badge" t-attf-style="background: {{ '#dc2626' if record.days_of_stock.value &lt; 7 else '#f97316' if record.days_of_stock.value &lt; 14 else '#22c55e' }}">
+                                        <t t-if="record.days_of_stock.value &lt; 7">🚨 CRÍTICO</t>
+                                        <t t-elif="record.days_of_stock.value &lt; 14">⚠️ BAJO</t>
+                                        <t t-else="">✅ SALUDABLE</t>
+                                    </span>
+                                    <field name="abc_classification" widget="badge"/>
+                                    <field name="fsn_classification" widget="badge"/>
+                                </div>
+                            </div>
+                        </group>
+                    </group>
+                    
+                    <!-- ALMACENES EN TARJETAS VISUALES -->
+                    <separator string="🏭 Estado por Almacén" style="margin-top: 20px;"/>
+                    <field name="warehouse_intelligence_ids">
+                        <kanban class="o_kanban_ungrouped" default_group_by="false">
+                            <field name="warehouse_id"/>
+                            <field name="qty_available"/>
+                            <field name="stockout_risk"/>
+                            <field name="days_of_stock"/>
+                            <field name="needs_reorder"/>
+                            <field name="suggested_order_qty"/>
+                            <field name="daily_usage"/>
+                            <field name="reorder_point"/>
+                            <templates>
+                                <t t-name="card">
+                                    <div t-attf-class="oe_kanban_card oe_kanban_global_click {{ 'o_kanban_card_critical' if record.stockout_risk.raw_value == 'critical' else '' }}">
+                                        <!-- Header con indicador visual -->
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                            <strong style="font-size: 13px;">
+                                                <i class="fa fa-warehouse me-1"/>
+                                                <field name="warehouse_id"/>
+                                            </strong>
+                                            <field name="stockout_risk" widget="badge"
+                                                   decoration-danger="stockout_risk in ('critical', 'high')"
+                                                   decoration-warning="stockout_risk == 'medium'"
+                                                   decoration-success="stockout_risk in ('low', 'none')"/>
+                                        </div>
+                                        
+                                        <!-- Mini gauge visual -->
+                                        <div style="height: 6px; background: #e5e7eb; border-radius: 3px; margin-bottom: 12px; overflow: hidden;">
+                                            <div t-attf-style="width: {{ min(100, (record.qty_available.value / (record.reorder_point.value * 2 or 100)) * 100) }}%; height: 100%; border-radius: 3px; background: {{ '#dc2626' if record.stockout_risk.raw_value in ('critical', 'high') else '#fbbf24' if record.stockout_risk.raw_value == 'medium' else '#22c55e' }};"/>
+                                        </div>
+                                        
+                                        <!-- Stats row -->
+                                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px;">
+                                            <div style="text-align: center; padding: 6px; background: #f9fafb; border-radius: 4px;">
+                                                <div style="font-size: 9px; color: #6b7280;">STOCK</div>
+                                                <div style="font-size: 16px; font-weight: 600;" t-attf-style="color: {{ '#dc2626' if record.qty_available.value &lt;= 0 else '#1f2937' }}">
+                                                    <field name="qty_available"/>
+                                                </div>
+                                            </div>
+                                            <div style="text-align: center; padding: 6px; background: #f9fafb; border-radius: 4px;">
+                                                <div style="font-size: 9px; color: #6b7280;">DÍAS</div>
+                                                <div style="font-size: 16px; font-weight: 600;" t-attf-style="color: {{ '#dc2626' if record.days_of_stock.value &lt; 7 else '#f97316' if record.days_of_stock.value &lt; 14 else '#22c55e' }}">
+                                                    <field name="days_of_stock"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Action Alert -->
+                                        <t t-if="record.needs_reorder.raw_value">
+                                            <div style="background: linear-gradient(135deg, #fef2f2, #fee2e2); border: 1px solid #fca5a5; border-radius: 6px; padding: 8px; text-align: center;">
+                                                <strong style="color: #dc2626; font-size: 12px;">
+                                                    ⚡ PEDIR: <field name="suggested_order_qty"/>
+                                                </strong>
+                                            </div>
+                                        </t>
+                                        <t t-else="">
+                                            <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 8px; text-align: center;">
+                                                <span style="color: #16a34a; font-size: 12px;">✅ Stock OK</span>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </t>
+                            </templates>
+                        </kanban>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+    <!-- VISTA KANBAN MEJORADA PARA PRODUCTOS -->
+    <!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+    
+    <record id="view_product_template_kanban_intelligence" model="ir.ui.view">
+        <field name="name">product.template.kanban.intelligence</field>
+        <field name="model">product.template</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="categ_id" class="o_kanban_small_column">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="qty_available"/>
+                <field name="days_of_stock"/>
+                <field name="stockout_risk"/>
+                <field name="needs_reorder"/>
+                <field name="daily_usage"/>
+                <field name="suggested_order_qty"/>
+                <field name="standard_price"/>
+                <templates>
+                    <t t-name="card">
+                        <div t-attf-class="oe_kanban_card oe_kanban_global_click o_kanban_product_card {{ 'o_kanban_card_critical' if record.stockout_risk.raw_value == 'critical' else 'o_kanban_card_warning' if record.stockout_risk.raw_value == 'high' else '' }}">
+                            <!-- Visual Priority Indicator -->
+                            <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; border-radius: 4px 4px 0 0;" 
+                                 t-attf-style="background: {{ '#dc2626' if record.stockout_risk.raw_value == 'critical' else '#f97316' if record.stockout_risk.raw_value == 'high' else '#fbbf24' if record.stockout_risk.raw_value == 'medium' else '#22c55e' }};"/>
+                            
+                            <div class="oe_kanban_content">
+                                <!-- Header -->
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                                    <strong style="font-size: 13px; line-height: 1.3; flex: 1;">
+                                        <field name="name"/>
+                                    </strong>
+                                    <field name="stockout_risk" widget="badge"
+                                           decoration-danger="stockout_risk in ('critical', 'high')"
+                                           decoration-warning="stockout_risk == 'medium'"
+                                           decoration-success="stockout_risk in ('low', 'none')"/>
+                                </div>
+                                
+                                <!-- Main Metrics -->
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px;">
+                                    <div style="text-align: center; padding: 8px; background: #f9fafb; border-radius: 6px;">
+                                        <div style="font-size: 9px; color: #6b7280; text-transform: uppercase; margin-bottom: 2px;">STOCK</div>
+                                        <div style="font-size: 18px; font-weight: 700;" t-attf-style="color: {{ '#dc2626' if record.qty_available.value &lt;= 0 else '#f97316' if record.qty_available.value &lt; 10 else '#1f2937' }}">
+                                            <field name="qty_available"/>
+                                        </div>
+                                    </div>
+                                    <div style="text-align: center; padding: 8px; background: #f9fafb; border-radius: 6px;">
+                                        <div style="font-size: 9px; color: #6b7280; text-transform: uppercase; margin-bottom: 2px;">DÍAS</div>
+                                        <div style="font-size: 18px; font-weight: 700;" t-attf-style="color: {{ '#dc2626' if record.days_of_stock.value &lt; 7 else '#f97316' if record.days_of_stock.value &lt; 14 else '#22c55e' }}">
+                                            <field name="days_of_stock"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Mini Gauge -->
+                                <div style="height: 4px; background: #e5e7eb; border-radius: 2px; margin-bottom: 8px; overflow: hidden;">
+                                    <div t-attf-style="width: {{ min(100, max(0, (record.days_of_stock.value / 30) * 100)) }}%; height: 100%; border-radius: 2px; background: {{ '#dc2626' if record.days_of_stock.value &lt; 7 else '#f97316' if record.days_of_stock.value &lt; 14 else '#22c55e' }}; transition: width 0.3s ease;"/>
+                                </div>
+                                
+                                <!-- Usage Info -->
+                                <div style="display: flex; justify-content: space-between; font-size: 11px; color: #6b7280;">
+                                    <span>Uso: <field name="daily_usage"/>/día</span>
+                                </div>
+                                
+                                <!-- Action Alert -->
+                                <t t-if="record.needs_reorder.raw_value">
+                                    <div style="margin-top: 8px; padding: 6px; background: linear-gradient(135deg, #fef2f2, #fee2e2); border-radius: 4px; text-align: center;">
+                                        <strong style="color: #dc2626; font-size: 11px;">
+                                            ⚡ PEDIR: <field name="suggested_order_qty"/>
+                                        </strong>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+    <!-- ACCIÓN PARA VER PRODUCTOS CON KANBAN MEJORADO -->
+    <!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+
+    <record id="action_products_intelligence_kanban" model="ir.actions.act_window">
+        <field name="name">🎯 Vista Inteligente de Productos</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('type', '=', 'product')]</field>
+        <field name="context">{'search_default_needs_reorder': 1}</field>
+        <field name="view_id" ref="view_product_template_kanban_intelligence"/>
+    </record>
+
+</odoo>

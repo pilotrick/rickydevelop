@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+
+    <!-- 🚨 MENÚ PRINCIPAL - ¿QUÉ PEDIR AHORA? - EN APP DE COMPRAS -->
+    <menuitem id="menu_pi_what_to_order_integrated"
+              name="🚨 ¿Qué Pedir Ahora?"
+              parent="menu_purchase_intelligence_integrated"
+              action="action_pi_reorder_command"
+              sequence="0"/>
+
+    <menuitem id="menu_pi_integrated_dashboard"
+              name="📊 Dashboard Operativo"
+              parent="menu_purchase_intelligence_integrated"
+              action="action_purchase_intelligence_dashboard"
+              sequence="1"/>
+
+    <menuitem id="menu_pi_integrated_reorder"
+              name="⚡ Optimización Reorden"
+              parent="menu_purchase_intelligence_integrated"
+              sequence="2"/>
+              
+    <menuitem id="menu_pi_integrated_warehouse_reorder"
+              name="🏭 Optimización por Almacén"
+              parent="menu_purchase_intelligence_integrated"
+              sequence="3"/>
+              
+    <menuitem id="menu_pi_integrated_populate"
+              name="🔄 Poblar Datos"
+              parent="menu_purchase_intelligence_integrated"
+              action="action_populate_all_data"
+              sequence="10"/>
+    
+    <menuitem id="menu_pi_generate_reorder_commands"
+              name="🔄 Actualizar Análisis de Reorden"
+              parent="menu_purchase_intelligence_integrated"
+              action="action_generate_reorder_commands"
+              sequence="11"/>
+
+    <!-- 🚨 MENÚ PRINCIPAL - ¿QUÉ PEDIR AHORA? - EN APP INTELIGENCIA -->
+    <menuitem id="menu_pi_what_to_order"
+              name="🚨 ¿QUÉ PEDIR AHORA?"
+              parent="menu_purchase_intelligence_root"
+              action="action_pi_reorder_command"
+              sequence="0"/>
+
+    <!-- 1. Dashboard Principal -->
+    <menuitem id="menu_pi_master_dashboard"
+              name="📊 Dashboard Principal"
+              parent="menu_purchase_intelligence_root"
+              action="action_purchase_intelligence_dashboard"
+              sequence="1"/>
+
+    <!-- 2. KPIs Submenu -->
+    <menuitem id="menu_pi_kpis"
+              name="KPIs y Métricas"
+              parent="menu_purchase_intelligence_root"
+              sequence="20"/>
+
+    <menuitem id="menu_pi_kpi_list"
+              name="Todos los KPIs"
+              parent="menu_pi_kpis"
+              action="action_purchase_intelligence_kpi"
+              sequence="1"/>
+
+    <menuitem id="menu_pi_kpi_history"
+              name="Historial de KPIs"
+              parent="menu_pi_kpis"
+              sequence="2"/>
+
+    <!-- 3. Automation Submenu -->
+    <menuitem id="menu_pi_automation"
+              name="Automatización"
+              parent="menu_purchase_intelligence_root"
+              sequence="30"/>
+
+    <menuitem id="menu_pi_auto_orders"
+              name="Órdenes Automatizadas"
+              parent="menu_pi_automation"
+              sequence="1"/>
+
+    <menuitem id="menu_pi_reorder"
+              name="Optimización Reorden"
+              parent="menu_pi_automation"
+              sequence="2"/>
+              
+    <menuitem id="menu_pi_warehouse_reorder"
+              name="Optimización por Almacén"
+              parent="menu_pi_automation"
+              sequence="3"/>
+
+    <menuitem id="menu_pi_forecasts"
+              name="Pronósticos"
+              parent="menu_pi_automation"
+              sequence="4"/>
+
+    <!-- 4. Suppliers Submenu -->
+    <menuitem id="menu_pi_suppliers"
+              name="Proveedores"
+              parent="menu_purchase_intelligence_root"
+              sequence="40"/>
+
+    <menuitem id="menu_pi_scorecards"
+              name="Cuadros de Mando"
+              parent="menu_pi_suppliers"
+              sequence="1"/>
+
+    <!-- 5. Risk Management Submenu -->
+    <menuitem id="menu_pi_risks"
+              name="Gestión de Riesgos"
+              parent="menu_purchase_intelligence_root"
+              sequence="50"/>
+
+    <menuitem id="menu_pi_risk_assessment"
+              name="Evaluación de Riesgos"
+              parent="menu_pi_risks"
+              sequence="1"/>
+
+    <menuitem id="menu_pi_alerts"
+              name="Alertas"
+              parent="menu_pi_risks"
+              sequence="2"/>
+
+    <menuitem id="menu_pi_alert_log"
+              name="Historial de Alertas"
+              parent="menu_pi_risks"
+              sequence="3"/>
+
+    <!-- 6. Contracts Submenu -->
+    <menuitem id="menu_pi_contracts"
+              name="Contratos"
+              parent="menu_purchase_intelligence_root"
+              sequence="60"/>
+
+    <menuitem id="menu_pi_contract_perf"
+              name="Rendimiento Contratos"
+              parent="menu_pi_contracts"
+              sequence="1"/>
+
+    <!-- 7. Analysis Submenu -->
+    <menuitem id="menu_pi_analysis"
+              name="Análisis"
+              parent="menu_purchase_intelligence_root"
+              sequence="70"/>
+
+    <menuitem id="menu_pi_spend_analysis"
+              name="Análisis de Gastos"
+              parent="menu_pi_analysis"
+              sequence="1"/>
+
+    <menuitem id="menu_pi_price_history"
+              name="Historial de Precios"
+              parent="menu_pi_analysis"
+              sequence="2"/>
+
+    <menuitem id="menu_pi_savings"
+              name="Ahorros"
+              parent="menu_pi_analysis"
+              sequence="3"/>
+
+    <menuitem id="menu_pi_forecast_accuracy"
+              name="Precisión de Pronósticos"
+              parent="menu_pi_analysis"
+              sequence="4"/>
+
+    <!-- 8. Configuration Submenu -->
+    <menuitem id="menu_pi_config"
+              name="Configuración"
+              parent="menu_purchase_intelligence_root"
+              sequence="100"/>
+
+    <menuitem id="menu_pi_populate_data"
+              name="🔄 Poblar Todos los Datos"
+              parent="menu_pi_config"
+              action="action_populate_all_data"
+              sequence="0"/>
+
+    <menuitem id="menu_pi_settings"
+              name="Ajustes Generales"
+              parent="menu_pi_config"
+              sequence="1"/>
+
+</odoo>

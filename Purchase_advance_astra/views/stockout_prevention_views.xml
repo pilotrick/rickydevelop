@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Tree View -->
+    <record id="view_stockout_prevention_tree" model="ir.ui.view">
+        <field name="name">pi.stockout.prevention.tree</field>
+        <field name="model">pi.stockout.prevention</field>
+        <field name="arch" type="xml">
+            <list string="Prevención de Roturas" decoration-danger="stockout_risk == 'stockout'" 
+                  decoration-warning="stockout_risk == 'critical'" decoration-info="stockout_risk == 'high'">
+                <field name="product_id"/>
+                <field name="warehouse_id"/>
+                <field name="current_stock"/>
+                <field name="available_stock"/>
+                <field name="days_until_stockout" avg="1"/>
+                <field name="daily_usage"/>
+                <field name="safety_stock"/>
+                <field name="reorder_point"/>
+                <field name="stockout_risk" widget="badge" 
+                    decoration-danger="stockout_risk in ('stockout', 'critical')"
+                    decoration-warning="stockout_risk == 'high'"
+                    decoration-info="stockout_risk == 'medium'"
+                    decoration-success="stockout_risk == 'none'"/>
+                <field name="suggested_order_qty"/>
+                <field name="supplier_id"/>
+                <field name="estimated_cost" widget="monetary"/>
+                <field name="state" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_stockout_prevention_form" model="ir.ui.view">
+        <field name="name">pi.stockout.prevention.form</field>
+        <field name="model">pi.stockout.prevention</field>
+        <field name="arch" type="xml">
+            <form string="Prevención de Rotura">
+                <header>
+                    <button name="action_create_purchase_order" type="object" string="🛒 Crear Orden de Compra" 
+                            invisible="stockout_risk not in ('critical', 'high', 'stockout')" class="oe_highlight"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button type="object" name="action_view_product" string="Ver Producto" icon="fa-cube"/>
+                    </div>
+                    <group>
+                        <group string="Información del Producto">
+                            <field name="product_id"/>
+                            <field name="warehouse_id"/>
+                            <field name="supplier_id"/>
+                        </group>
+                        <group string="Niveles de Stock">
+                            <field name="current_stock"/>
+                            <field name="reserved_stock"/>
+                            <field name="available_stock"/>
+                        </group>
+                    </group>
+                    <group string="Análisis de Demanda">
+                        <group>
+                            <field name="daily_usage"/>
+                            <field name="lead_time_days"/>
+                            <field name="days_until_stockout"/>
+                        </group>
+                        <group>
+                            <field name="stockout_risk" widget="badge"/>
+                            <field name="priority"/>
+                            <field name="stockout_history_count"/>
+                        </group>
+                    </group>
+                    <group string="Puntos de Reorden Inteligentes">
+                        <group>
+                            <field name="safety_stock_days"/>
+                            <field name="safety_stock"/>
+                            <field name="reorder_point"/>
+                        </group>
+                        <group>
+                            <field name="suggested_order_qty"/>
+                            <field name="estimated_cost" widget="monetary"/>
+                        </group>
+                    </group>
+                    <group string="Historial de Alertas">
+                        <group colspan="2">
+                            <field name="alert_sent"/>
+                            <field name="alert_date"/>
+                            <field name="last_stockout_date"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Kanban View with Visual Indicators -->
+    <record id="view_stockout_prevention_kanban" model="ir.ui.view">
+        <field name="name">pi.stockout.prevention.kanban</field>
+        <field name="model">pi.stockout.prevention</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="stockout_risk" class="o_kanban_mobile">
+                <field name="id"/>
+                <field name="product_id"/>
+                <field name="warehouse_id"/>
+                <field name="stockout_risk"/>
+                <field name="days_until_stockout"/>
+                <field name="current_stock"/>
+                <field name="available_stock"/>
+                <field name="suggested_order_qty"/>
+                <field name="supplier_id"/>
+                <templates>
+                    <t t-name="card">
+                        <div t-att-class="'oe_kanban_color_' + (record.stockout_risk.value === 'stockout' ? 'danger' : record.stockout_risk.value === 'critical' ? 'warning' : 'default')">
+                            <div class="oe_kanban_content">
+                                <div class="o_kanban_record_top">
+                                    <strong><field name="product_id"/></strong>
+                                </div>
+                                <div class="o_kanban_record_body">
+                                    <p><field name="warehouse_id"/></p>
+                                    <p>Stock: <field name="current_stock"/> (<field name="days_until_stockout"/> días)</p>
+                                    <t t-if="record.suggested_order_qty > 0">
+                                        <p class="text-warning">Pedir: <field name="suggested_order_qty"/></p>
+                                    </t>
+                                </div>
+                                <div class="o_kanban_record_bottom">
+                                    <field name="stockout_risk" widget="badge"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_stockout_prevention_search" model="ir.ui.view">
+        <field name="name">pi.stockout.prevention.search</field>
+        <field name="model">pi.stockout.prevention</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Prevención de Roturas">
+                <field name="product_id"/>
+                <field name="warehouse_id"/>
+                <filter string="Crítico" name="critical" domain="[('stockout_risk', '=', 'critical')]"/>
+                <filter string="Alto Riesgo" name="high" domain="[('stockout_risk', '=', 'high')]"/>
+                <filter string="Sin Stock" name="stockout" domain="[('stockout_risk', '=', 'stockout')]"/>
+                <filter string="Necesita Pedido" name="needs_order" domain="[('stockout_risk', 'in', ['critical', 'high', 'stockout'])]"/>
+                <separator/>
+                <filter string="Agrupar por Almacén" name="warehouse" context="{'group_by': 'warehouse_id'}"/>
+                <filter string="Agrupar por Riesgo" name="risk" context="{'group_by': 'stockout_risk'}"/>
+                <filter string="Agrupar por Proveedor" name="supplier" context="{'group_by': 'supplier_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_stockout_prevention" model="ir.actions.act_window">
+        <field name="name">🚨 Prevención de Roturas</field>
+        <field name="res_model">pi.stockout.prevention</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_stockout_prevention_search"/>
+        <field name="context">{'search_default_needs_order': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Sin riesgos de rotura detectados
+            </p>
+            <p>
+                El sistema monitorea automáticamente el stock y calcula puntos de reorden inteligentes.
+            </p>
+        </field>
+    </record>
+
+    <!-- Add to main menu -->
+    <menuitem id="menu_stockout_prevention" 
+             name="🚨 Prevención de Roturas" 
+             parent="menu_purchase_intelligence_root" 
+             action="action_stockout_prevention" 
+             sequence="1"/>
+</odoo>

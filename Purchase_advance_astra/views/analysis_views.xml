@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<record id="view_purchase_intelligence_analysis_graph" model="ir.ui.view">
+        <field name="name">purchase.intelligence.analysis.graph</field>
+        <field name="model">purchase.intelligence.analysis</field>
+        <field name="arch" type="xml">
+            <graph string="Análisis de Gasto" type="line">
+                <field name="date" interval="month"/>
+                <field name="spend_amount" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_purchase_intelligence_analysis_pivot" model="ir.ui.view">
+        <field name="name">purchase.intelligence.analysis.pivot</field>
+        <field name="model">purchase.intelligence.analysis</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Gasto">
+                <field name="date" type="row" interval="month"/>
+                <field name="category_id" type="col"/>
+                <field name="spend_amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_server_generate_reorder_optimization" model="ir.actions.server">
+        <field name="name">🔄 Regenerar Optimización de Reorden</field>
+        <field name="model_id" ref="model_pi_reorder_optimization"/>
+        <field name="binding_model_id" ref="model_pi_reorder_optimization"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+action = model.action_generate_all_optimizations()
+        </field>
+    </record>
+
+    <record id="view_purchase_intelligence_forecast_tree" model="ir.ui.view">
+        <field name="name">purchase.intelligence.forecast.tree</field>
+        <field name="model">purchase.intelligence.forecast</field>
+        <field name="arch" type="xml">
+            <list string="Previsión de Demanda">
+                <header>
+                    <button name="action_update_forecasts" type="object" string="🔄 Generar Pronósticos" class="btn-primary"/>
+                </header>
+                <field name="product_id"/>
+                <field name="date"/>
+                <field name="forecast_qty"/>
+                <field name="confidence" widget="progressbar"/>
+                <field name="method"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Analysis Action -->
+    <record id="action_purchase_intelligence_analysis" model="ir.actions.act_window">
+        <field name="name">Análisis de Gastos</field>
+        <field name="res_model">purchase.intelligence.analysis</field>
+        <field name="view_mode">graph,pivot</field>
+    </record>
+
+    <!-- Forecast Action -->
+    <record id="action_purchase_intelligence_forecast" model="ir.actions.act_window">
+        <field name="name">Pronósticos de Demanda</field>
+        <field name="res_model">purchase.intelligence.forecast</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

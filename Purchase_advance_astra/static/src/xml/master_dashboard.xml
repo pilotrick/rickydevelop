@@ -1,0 +1,792 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="purchase_intelligence.MasterPurchaseDashboard" owl="1">
+        <div class="o_purchase_intelligence_dashboard">
+            <!-- Header Corporativo -->
+            <div class="dashboard-header">
+                <div class="header-title">
+                    <i class="fa fa-bar-chart"/> Centro de Inteligencia de Compras
+                </div>
+                <div class="header-actions">
+                    <span class="last-update" t-if="state.lastUpdate">
+                        <i class="fa fa-clock-o"/> <t t-esc="state.lastUpdate"/>
+                    </span>
+                    <button class="btn btn-outline-light btn-sm" t-on-click="runStockAnalysis" title="Ejecutar análisis automático ahora">
+                        <i class="fa fa-cogs"/> Ejecutar Análisis
+                    </button>
+                    <button class="btn btn-light btn-sm" t-on-click="refreshDashboard">
+                        <i class="fa fa-refresh"/> Actualizar
+                    </button>
+                </div>
+            </div>
+
+            <t t-if="state.loading">
+                <div class="loading-container">
+                    <div class="spinner-border text-primary" role="status"/>
+                    <p>Analizando datos de inventario...</p>
+                </div>
+            </t>
+
+            <t t-else="">
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <!-- FILA 1: KPIs PRINCIPALES -->
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <div class="kpi-row">
+                    <div class="kpi-card kpi-blue" t-on-click="() => this.openPurchaseOrders('active')">
+                        <div class="kpi-icon"><i class="fa fa-shopping-cart"/></div>
+                        <div class="kpi-content">
+                            <div class="kpi-value"><t t-esc="state.kpis.active_orders || 0"/></div>
+                            <div class="kpi-label">Órdenes Activas</div>
+                            <div class="kpi-sublabel">$<t t-esc="formatNumber(state.kpis.active_orders_value)"/></div>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card kpi-orange" t-on-click="() => this.openPurchaseOrders('pending')">
+                        <div class="kpi-icon"><i class="fa fa-clock-o"/></div>
+                        <div class="kpi-content">
+                            <div class="kpi-value"><t t-esc="state.kpis.pending_approvals || 0"/></div>
+                            <div class="kpi-label">Pendientes Aprobación</div>
+                            <div class="kpi-sublabel">$<t t-esc="formatNumber(state.kpis.pending_value)"/></div>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card kpi-red" t-on-click="openCriticalProducts">
+                        <div class="kpi-icon"><i class="fa fa-exclamation-triangle"/></div>
+                        <div class="kpi-content">
+                            <div class="kpi-value"><t t-esc="state.kpis.critical_items || 0"/></div>
+                            <div class="kpi-label">Productos Críticos</div>
+                            <div class="kpi-sublabel">Riesgo de Rotura</div>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card kpi-green" t-on-click="openExpectedDeliveries">
+                        <div class="kpi-icon"><i class="fa fa-truck"/></div>
+                        <div class="kpi-content">
+                            <div class="kpi-value"><t t-esc="state.kpis.expected_deliveries || 0"/></div>
+                            <div class="kpi-label">Recepciones Hoy</div>
+                            <div class="kpi-sublabel">Entregas Programadas</div>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card kpi-purple" t-on-click="openLowStockProducts">
+                        <div class="kpi-icon"><i class="fa fa-battery-quarter"/></div>
+                        <div class="kpi-content">
+                            <div class="kpi-value"><t t-esc="state.kpis.low_stock_count || 0"/></div>
+                            <div class="kpi-label">Stock Bajo</div>
+                            <div class="kpi-sublabel">&lt; 7 días cobertura</div>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card kpi-teal" t-on-click="openPendingReceipts">
+                        <div class="kpi-icon"><i class="fa fa-inbox"/></div>
+                        <div class="kpi-content">
+                            <div class="kpi-value"><t t-esc="state.kpis.pending_receipts || 0"/></div>
+                            <div class="kpi-label">Por Recibir</div>
+                            <div class="kpi-sublabel">$<t t-esc="formatNumber(state.kpis.pending_receipts_value)"/></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <!-- FILA 2: RESUMEN FINANCIERO -->
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <div class="section-title">
+                    <i class="fa fa-money"/> RESUMEN FINANCIERO DEL MES
+                </div>
+                <div class="financial-summary-row">
+                    <div class="financial-card">
+                        <div class="financial-label">💰 Compras del Mes</div>
+                        <div class="financial-value">$<t t-esc="formatNumber(state.financials.month_purchases)"/></div>
+                        <div class="financial-change" t-att-class="state.financials.month_change >= 0 ? 'positive' : 'negative'">
+                            <i t-att-class="state.financials.month_change >= 0 ? 'fa fa-arrow-up' : 'fa fa-arrow-down'"/>
+                            <t t-esc="formatDecimal(Math.abs(state.financials.month_change || 0))"/>% vs mes anterior
+                        </div>
+                    </div>
+                    <div class="financial-card">
+                        <div class="financial-label">📊 Promedio por Orden</div>
+                        <div class="financial-value">$<t t-esc="formatNumber(state.financials.avg_order_value)"/></div>
+                        <div class="financial-sublabel"><t t-esc="state.financials.total_orders || 0"/> órdenes este mes</div>
+                    </div>
+                    <div class="financial-card">
+                        <div class="financial-label">💸 Ahorro Negociado</div>
+                        <div class="financial-value text-success">$<t t-esc="formatNumber(state.financials.total_savings)"/></div>
+                        <div class="financial-sublabel"><t t-esc="formatDecimal(state.financials.savings_percent || 0)"/>% del total</div>
+                    </div>
+                    <div class="financial-card">
+                        <div class="financial-label">📈 Costo Promedio Flete</div>
+                        <div class="financial-value">$<t t-esc="formatNumber(state.financials.avg_freight_cost)"/></div>
+                        <div class="financial-sublabel"><t t-esc="formatDecimal(state.financials.freight_percent || 0)"/>% del costo total</div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <!-- FILA 3: PRODUCTOS QUE NECESITAN PEDIDO -->
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <div class="content-row">
+                    <div class="panel panel-main">
+                        <div class="panel-header">
+                            <h3>
+                                <i class="fa fa-shopping-basket text-danger"/> 
+                                🚨 PRODUCTOS QUE DEBES PEDIR URGENTE
+                                <span class="badge badge-danger ml-2"><t t-esc="state.productsToOrder.length"/></span>
+                            </h3>
+                            <div>
+                                <span class="info-text">
+                                    <i class="fa fa-info-circle"/> Análisis automático basado en consumo real
+                                </span>
+                                <button class="btn btn-sm btn-outline-primary ml-2" t-on-click="openAllProductsToOrder">
+                                    Ver Todos <i class="fa fa-arrow-right"/>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="panel-body">
+                            <t t-if="state.productsToOrder.length > 0">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Producto</th>
+                                            <th class="text-center">Stock</th>
+                                            <th class="text-center">Consumo/Día</th>
+                                            <th class="text-center">Días Stock</th>
+                                            <th class="text-center">Punto Reorden</th>
+                                            <th class="text-center">Cant. Sugerida</th>
+                                            <th class="text-center">Valor Estimado</th>
+                                            <th class="text-center">Riesgo</th>
+                                            <th class="text-center">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="state.productsToOrder" t-as="product" t-key="product.id">
+                                            <tr t-att-class="product.stockout_risk === 'critical' ? 'row-critical' : product.stockout_risk === 'high' ? 'row-warning' : ''">
+                                                <td class="product-cell" t-on-click="() => this.viewProduct(product.id)">
+                                                    <strong><t t-esc="product.name"/></strong>
+                                                    <br/>
+                                                    <small class="text-muted">
+                                                        <i class="fa fa-building-o"/> <t t-esc="product.supplier_name"/>
+                                                        <t t-if="product.lead_time_days"> • <t t-esc="product.lead_time_days"/> días entrega</t>
+                                                    </small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span t-att-class="product.qty_available &lt;= 0 ? 'text-danger font-weight-bold' : product.qty_available &lt; 10 ? 'text-warning font-weight-bold' : ''">
+                                                        <t t-esc="formatDecimal(product.qty_available)"/>
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <t t-esc="formatDecimal(product.daily_usage)"/>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span t-att-class="product.days_of_stock &lt; 3 ? 'badge badge-danger' : product.days_of_stock &lt; 7 ? 'badge badge-warning' : 'badge badge-info'">
+                                                        <t t-esc="formatDecimal(product.days_of_stock)"/> días
+                                                    </span>
+                                                </td>
+                                                <td class="text-center text-muted">
+                                                    <t t-esc="formatDecimal(product.reorder_point)"/>
+                                                </td>
+                                                <td class="text-center">
+                                                    <strong class="text-primary"><t t-esc="formatDecimal(product.suggested_order_qty)"/></strong>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="text-info">$<t t-esc="formatNumber(product.estimated_cost)"/></span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span t-att-class="'badge ' + getRiskClass(product.stockout_risk)">
+                                                        <t t-esc="getRiskLabel(product.stockout_risk)"/>
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <button class="btn btn-sm btn-success" 
+                                                            t-on-click="() => this.createPurchaseOrderForProduct(product)"
+                                                            t-att-disabled="!product.supplier_id">
+                                                        <i class="fa fa-plus"/> Crear PO
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </t>
+                            <t t-else="">
+                                <div class="empty-state success">
+                                    <i class="fa fa-check-circle fa-4x"/>
+                                    <h4>¡Excelente! Sin productos que requieran pedido urgente</h4>
+                                    <p>El análisis automático no detectó productos por debajo del punto de reorden.</p>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <!-- FILA 4: TOP PROVEEDORES + PRODUCTOS MAS COMPRADOS -->
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <div class="content-row two-columns">
+                    <!-- Panel: Top Proveedores -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fa fa-users"/> TOP 10 PROVEEDORES</h3>
+                            <button class="btn btn-sm btn-outline-secondary" t-on-click="openAllSuppliers">Ver Todos</button>
+                        </div>
+                        <div class="panel-body">
+                            <t t-if="state.topSuppliers &amp;&amp; state.topSuppliers.length > 0">
+                                <table class="mini-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Proveedor</th>
+                                            <th class="text-right">Compras</th>
+                                            <th class="text-center">Órdenes</th>
+                                            <th class="text-center">Cumplimiento</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="state.topSuppliers.slice(0, 10)" t-as="supplier" t-key="supplier.id">
+                                            <tr t-on-click="() => this.viewSupplier(supplier.id)">
+                                                <td class="text-muted"><t t-esc="supplier_index + 1"/></td>
+                                                <td>
+                                                    <strong><t t-esc="supplier.name"/></strong>
+                                                </td>
+                                                <td class="text-right">
+                                                    <span class="text-success">$<t t-esc="formatNumber(supplier.total_amount)"/></span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <t t-esc="supplier.order_count"/>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span t-att-class="supplier.on_time_rate >= 90 ? 'badge badge-success' : supplier.on_time_rate >= 70 ? 'badge badge-warning' : 'badge badge-danger'">
+                                                        <t t-esc="formatDecimal(supplier.on_time_rate)"/>%
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </t>
+                            <t t-else="">
+                                <div class="empty-state">
+                                    <i class="fa fa-building fa-2x"/>
+                                    <p>Sin datos de proveedores este mes</p>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- Panel: Productos más comprados -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fa fa-star"/> TOP 10 PRODUCTOS MÁS COMPRADOS</h3>
+                            <button class="btn btn-sm btn-outline-secondary" t-on-click="openTopProducts">Ver Todos</button>
+                        </div>
+                        <div class="panel-body">
+                            <t t-if="state.topProducts &amp;&amp; state.topProducts.length > 0">
+                                <table class="mini-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Producto</th>
+                                            <th class="text-right">Cantidad</th>
+                                            <th class="text-right">Valor</th>
+                                            <th class="text-center">Frecuencia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="state.topProducts.slice(0, 10)" t-as="product" t-key="product.id">
+                                            <tr t-on-click="() => this.viewProduct(product.id)">
+                                                <td class="text-muted"><t t-esc="product_index + 1"/></td>
+                                                <td>
+                                                    <strong><t t-esc="product.name"/></strong>
+                                                </td>
+                                                <td class="text-right">
+                                                    <t t-esc="formatDecimal(product.total_qty)"/>
+                                                </td>
+                                                <td class="text-right">
+                                                    <span class="text-primary">$<t t-esc="formatNumber(product.total_value)"/></span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge badge-info"><t t-esc="product.order_count"/> órdenes</span>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </t>
+                            <t t-else="">
+                                <div class="empty-state">
+                                    <i class="fa fa-cube fa-2x"/>
+                                    <p>Sin datos de productos este mes</p>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <!-- FILA 5: STOCK POR ALMACÉN + ÓRDENES RECIENTES -->
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <div class="content-row two-columns">
+                    <!-- Panel: Stock por Almacén -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fa fa-warehouse"/> STOCK POR ALMACÉN</h3>
+                        </div>
+                        <div class="panel-body">
+                            <t t-if="state.warehouseStock &amp;&amp; state.warehouseStock.length > 0">
+                                <t t-foreach="state.warehouseStock" t-as="wh" t-key="wh.id">
+                                    <div class="warehouse-card">
+                                        <div class="warehouse-header">
+                                            <span class="warehouse-name"><i class="fa fa-building-o"/> <t t-esc="wh.name"/></span>
+                                            <span class="warehouse-value">$<t t-esc="formatNumber(wh.total_value)"/></span>
+                                        </div>
+                                        <div class="warehouse-stats">
+                                            <div class="stat-item">
+                                                <span class="stat-label">Productos</span>
+                                                <span class="stat-value"><t t-esc="wh.product_count"/></span>
+                                            </div>
+                                            <div class="stat-item">
+                                                <span class="stat-label">Stock Bajo</span>
+                                                <span t-att-class="wh.low_stock_count > 0 ? 'stat-value text-danger' : 'stat-value text-success'">
+                                                    <t t-esc="wh.low_stock_count"/>
+                                                </span>
+                                            </div>
+                                            <div class="stat-item">
+                                                <span class="stat-label">Sin Stock</span>
+                                                <span t-att-class="wh.out_of_stock_count > 0 ? 'stat-value text-danger font-weight-bold' : 'stat-value text-success'">
+                                                    <t t-esc="wh.out_of_stock_count"/>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="warehouse-bar">
+                                            <div class="bar-fill" t-att-style="'width: ' + (wh.fill_percent || 0) + '%'"/>
+                                        </div>
+                                    </div>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <div class="empty-state">
+                                    <i class="fa fa-cubes fa-2x"/>
+                                    <p>Sin datos de almacenes</p>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- Panel: Órdenes Recientes -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fa fa-history"/> ÚLTIMAS ÓRDENES DE COMPRA</h3>
+                            <button class="btn btn-sm btn-outline-secondary" t-on-click="openAllOrders">Ver Todas</button>
+                        </div>
+                        <div class="panel-body">
+                            <t t-if="state.recentOrders &amp;&amp; state.recentOrders.length > 0">
+                                <t t-foreach="state.recentOrders.slice(0, 8)" t-as="order" t-key="order.id">
+                                    <div class="order-item" t-on-click="() => this.viewOrder(order.id)">
+                                        <div class="order-info">
+                                            <span class="order-name"><t t-esc="order.name"/></span>
+                                            <span class="order-supplier"><t t-esc="order.partner_name"/></span>
+                                        </div>
+                                        <div class="order-meta">
+                                            <span class="order-date"><t t-esc="order.date_order"/></span>
+                                            <span class="order-amount">$<t t-esc="formatNumber(order.amount_total)"/></span>
+                                            <span t-att-class="'order-state badge badge-' + getStateClass(order.state)">
+                                                <t t-esc="getStateLabel(order.state)"/>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <div class="empty-state">
+                                    <i class="fa fa-file-text-o fa-2x"/>
+                                    <p>Sin órdenes recientes</p>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <!-- FILA 6: KPIs DETALLADOS + ALERTAS -->
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <div class="content-row two-columns">
+                    <!-- Panel: KPIs Detallados -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fa fa-line-chart"/> INDICADORES CLAVE DE RENDIMIENTO</h3>
+                            <button class="btn btn-sm btn-outline-secondary" t-on-click="openAllKPIs">Ver Todos</button>
+                        </div>
+                        <div class="panel-body">
+                            <div class="kpi-grid">
+                                <div class="kpi-metric-card">
+                                    <div class="metric-icon bg-info"><i class="fa fa-calendar"/></div>
+                                    <div class="metric-content">
+                                        <div class="metric-value"><t t-esc="formatDecimal(state.kpis.avg_lead_time || 0)"/> días</div>
+                                        <div class="metric-label">Tiempo Promedio Entrega</div>
+                                    </div>
+                                </div>
+                                <div class="kpi-metric-card">
+                                    <div class="metric-icon bg-success"><i class="fa fa-check-circle"/></div>
+                                    <div class="metric-content">
+                                        <div class="metric-value"><t t-esc="formatDecimal(state.kpis.on_time_delivery_rate || 0)"/>%</div>
+                                        <div class="metric-label">Tasa Entrega a Tiempo</div>
+                                    </div>
+                                </div>
+                                <div class="kpi-metric-card">
+                                    <div class="metric-icon bg-warning"><i class="fa fa-refresh"/></div>
+                                    <div class="metric-content">
+                                        <div class="metric-value"><t t-esc="formatDecimal(state.kpis.inventory_turnover || 0)"/>x</div>
+                                        <div class="metric-label">Rotación de Inventario</div>
+                                    </div>
+                                </div>
+                                <div class="kpi-metric-card">
+                                    <div class="metric-icon bg-danger"><i class="fa fa-times-circle"/></div>
+                                    <div class="metric-content">
+                                        <div class="metric-value"><t t-esc="formatDecimal(state.kpis.stockout_rate || 0)"/>%</div>
+                                        <div class="metric-label">Tasa de Roturas Stock</div>
+                                    </div>
+                                </div>
+                                <div class="kpi-metric-card">
+                                    <div class="metric-icon bg-primary"><i class="fa fa-usd"/></div>
+                                    <div class="metric-content">
+                                        <div class="metric-value"><t t-esc="formatDecimal(state.kpis.cost_variance || 0)"/>%</div>
+                                        <div class="metric-label">Variación de Costos</div>
+                                    </div>
+                                </div>
+                                <div class="kpi-metric-card">
+                                    <div class="metric-icon bg-secondary"><i class="fa fa-users"/></div>
+                                    <div class="metric-content">
+                                        <div class="metric-value"><t t-esc="state.kpis.active_suppliers || 0"/></div>
+                                        <div class="metric-label">Proveedores Activos</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel: Alertas y Presupuesto -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fa fa-bell"/> ALERTAS Y PRESUPUESTO</h3>
+                            <button class="btn btn-sm btn-outline-secondary" t-on-click="viewAlerts">Historial</button>
+                        </div>
+                        <div class="panel-body alerts-container">
+                            <!-- Alertas -->
+                            <t t-if="state.alerts.length > 0">
+                                <t t-foreach="state.alerts.slice(0, 4)" t-as="alert" t-key="alert_index">
+                                    <div t-att-class="'alert-item alert-' + alert.priority">
+                                        <div class="alert-icon">
+                                            <i t-att-class="'fa ' + (alert.priority === 'critical' ? 'fa-fire' : alert.priority === 'high' ? 'fa-exclamation-triangle' : 'fa-info-circle')"/>
+                                        </div>
+                                        <div class="alert-content">
+                                            <div class="alert-title"><t t-esc="alert.name"/></div>
+                                            <div class="alert-message"><t t-esc="alert.message"/></div>
+                                        </div>
+                                    </div>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <div class="empty-state success small">
+                                    <i class="fa fa-thumbs-up fa-2x"/>
+                                    <p>Sin alertas activas</p>
+                                </div>
+                            </t>
+
+                            <!-- Presupuesto -->
+                            <div class="budget-summary mt-4">
+                                <h5><i class="fa fa-pie-chart"/> Control de Presupuesto</h5>
+                                <div class="budget-row">
+                                    <span>Mensual</span>
+                                    <div class="progress flex-grow-1 mx-2">
+                                        <div class="progress-bar" 
+                                             t-att-class="(state.budgetStatus.monthly_percent || 0) > 90 ? 'bg-danger' : (state.budgetStatus.monthly_percent || 0) > 75 ? 'bg-warning' : 'bg-success'"
+                                             t-att-style="'width: ' + (state.budgetStatus.monthly_percent || 0) + '%'">
+                                        </div>
+                                    </div>
+                                    <span><t t-esc="state.budgetStatus.monthly_percent || 0"/>%</span>
+                                </div>
+                                <small class="text-muted">
+                                    $<t t-esc="formatNumber(state.budgetStatus.monthly_used)"/> de $<t t-esc="formatNumber(state.budgetStatus.monthly_total)"/>
+                                </small>
+                                <div class="budget-row mt-2">
+                                    <span>Anual</span>
+                                    <div class="progress flex-grow-1 mx-2">
+                                        <div class="progress-bar bg-info" 
+                                             t-att-style="'width: ' + (state.budgetStatus.yearly_percent || 0) + '%'">
+                                        </div>
+                                    </div>
+                                    <span><t t-esc="state.budgetStatus.yearly_percent || 0"/>%</span>
+                                </div>
+                                <small class="text-muted">
+                                    $<t t-esc="formatNumber(state.budgetStatus.yearly_used)"/> de $<t t-esc="formatNumber(state.budgetStatus.yearly_total)"/>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <!-- FILA 7: TENDENCIAS Y ANÁLISIS -->
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <div class="content-row two-columns">
+                    <!-- Panel: Categorías más compradas -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fa fa-tags"/> COMPRAS POR CATEGORÍA</h3>
+                        </div>
+                        <div class="panel-body">
+                            <t t-if="state.categoryBreakdown &amp;&amp; state.categoryBreakdown.length > 0">
+                                <t t-foreach="state.categoryBreakdown.slice(0, 6)" t-as="cat" t-key="cat.id">
+                                    <div class="category-row">
+                                        <span class="category-name"><t t-esc="cat.name"/></span>
+                                        <div class="category-bar">
+                                            <div class="bar-fill" t-att-style="'width: ' + cat.percent + '%'" t-att-class="'bg-color-' + (cat_index % 5 + 1)"/>
+                                        </div>
+                                        <span class="category-value">$<t t-esc="formatNumber(cat.amount)"/></span>
+                                        <span class="category-percent"><t t-esc="formatDecimal(cat.percent)"/>%</span>
+                                    </div>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <div class="empty-state">
+                                    <i class="fa fa-folder-open fa-2x"/>
+                                    <p>Sin datos de categorías</p>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- Panel: Próximas Entregas -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fa fa-calendar-check-o"/> PRÓXIMAS ENTREGAS (7 DÍAS)</h3>
+                        </div>
+                        <div class="panel-body">
+                            <t t-if="state.upcomingDeliveries &amp;&amp; state.upcomingDeliveries.length > 0">
+                                <t t-foreach="state.upcomingDeliveries.slice(0, 6)" t-as="delivery" t-key="delivery.id">
+                                    <div class="delivery-item" t-on-click="() => this.viewPicking(delivery.id)">
+                                        <div class="delivery-date">
+                                            <span class="day"><t t-esc="delivery.day"/></span>
+                                            <span class="month"><t t-esc="delivery.month"/></span>
+                                        </div>
+                                        <div class="delivery-info">
+                                            <span class="delivery-ref"><t t-esc="delivery.name"/></span>
+                                            <span class="delivery-supplier"><t t-esc="delivery.partner_name"/></span>
+                                        </div>
+                                        <div class="delivery-products">
+                                            <span class="badge badge-info"><t t-esc="delivery.product_count"/> productos</span>
+                                        </div>
+                                    </div>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <div class="empty-state">
+                                    <i class="fa fa-truck fa-2x"/>
+                                    <p>No hay entregas programadas</p>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <!-- FILA 8: ANÁLISIS ABC DE INVENTARIO -->
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <div class="section-title">
+                    <i class="fa fa-cubes"/> ANÁLISIS ABC DE INVENTARIO
+                </div>
+                <div class="content-row">
+                    <div class="panel panel-main">
+                        <div class="panel-body">
+                            <div class="abc-grid">
+                                <div class="abc-card abc-a">
+                                    <div class="abc-header">🔴 Clase A - Alto Valor</div>
+                                    <div class="abc-value"><t t-esc="state.abcAnalysis?.a_count || 0"/> productos</div>
+                                    <div class="abc-percent"><t t-esc="state.abcAnalysis?.a_percent || 80"/>% del valor</div>
+                                    <div class="abc-amount">$<t t-esc="formatNumber(state.abcAnalysis?.a_value || 0)"/></div>
+                                </div>
+                                <div class="abc-card abc-b">
+                                    <div class="abc-header">🟡 Clase B - Medio Valor</div>
+                                    <div class="abc-value"><t t-esc="state.abcAnalysis?.b_count || 0"/> productos</div>
+                                    <div class="abc-percent"><t t-esc="state.abcAnalysis?.b_percent || 15"/>% del valor</div>
+                                    <div class="abc-amount">$<t t-esc="formatNumber(state.abcAnalysis?.b_value || 0)"/></div>
+                                </div>
+                                <div class="abc-card abc-c">
+                                    <div class="abc-header">🟢 Clase C - Bajo Valor</div>
+                                    <div class="abc-value"><t t-esc="state.abcAnalysis?.c_count || 0"/> productos</div>
+                                    <div class="abc-percent"><t t-esc="state.abcAnalysis?.c_percent || 5"/>% del valor</div>
+                                    <div class="abc-amount">$<t t-esc="formatNumber(state.abcAnalysis?.c_value || 0)"/></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <!-- FILA 9: EVALUACIONES DE PROVEEDORES (SCORECARDS) -->
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <div class="section-title">
+                    <i class="fa fa-star"/> EVALUACIÓN DE PROVEEDORES (SCORECARDS)
+                </div>
+                <div class="content-row">
+                    <div class="panel panel-main">
+                        <div class="panel-header">
+                            <h3><i class="fa fa-tachometer"/> Últimas Evaluaciones</h3>
+                            <button class="btn btn-sm btn-outline-primary" t-on-click="openScorecards">Ver Todos</button>
+                        </div>
+                        <div class="panel-body">
+                            <t t-if="state.scorecards &amp;&amp; state.scorecards.length > 0">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Proveedor</th>
+                                            <th class="text-center">Calidad</th>
+                                            <th class="text-center">Entrega</th>
+                                            <th class="text-center">Precio</th>
+                                            <th class="text-center">Servicio</th>
+                                            <th class="text-center">Innovación</th>
+                                            <th class="text-center">Puntuación Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="state.scorecards.slice(0, 10)" t-as="sc" t-key="sc.id">
+                                            <tr t-on-click="() => this.viewSupplier(sc.partner_id)">
+                                                <td><strong><t t-esc="sc.partner_name"/></strong></td>
+                                                <td class="text-center"><span class="badge badge-info"><t t-esc="sc.score_quality"/></span></td>
+                                                <td class="text-center"><span class="badge badge-info"><t t-esc="sc.score_delivery"/></span></td>
+                                                <td class="text-center"><span class="badge badge-info"><t t-esc="sc.score_price"/></span></td>
+                                                <td class="text-center"><span class="badge badge-info"><t t-esc="sc.score_service"/></span></td>
+                                                <td class="text-center"><span class="badge badge-info"><t t-esc="sc.score_innovation"/></span></td>
+                                                <td class="text-center">
+                                                    <span t-att-class="'badge ' + (sc.overall_score >= 8 ? 'badge-success' : sc.overall_score >= 6 ? 'badge-warning' : 'badge-danger')">
+                                                        <t t-esc="sc.overall_score"/> / 10
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </t>
+                            <t t-else="">
+                                <div class="empty-state">
+                                    <i class="fa fa-tachometer fa-2x"/>
+                                    <p>Sin evaluaciones de proveedores. Ve a Configuración → Poblar Todos los Datos</p>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <!-- FILA 10: PRONÓSTICOS DE DEMANDA -->
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <div class="section-title">
+                    <i class="fa fa-line-chart"/> PRONÓSTICOS DE DEMANDA
+                </div>
+                <div class="content-row">
+                    <div class="panel panel-main">
+                        <div class="panel-header">
+                            <h3><i class="fa fa-chart-line"/> Previsión Próximo Mes</h3>
+                            <button class="btn btn-sm btn-outline-primary" t-on-click="openForecasts">Ver Todos</button>
+                        </div>
+                        <div class="panel-body">
+                            <t t-if="state.forecasts &amp;&amp; state.forecasts.length > 0">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Producto</th>
+                                            <th class="text-center">Cantidad Prevista</th>
+                                            <th class="text-center">Confianza</th>
+                                            <th class="text-center">Tendencia</th>
+                                            <th class="text-center">Método</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="state.forecasts.slice(0, 10)" t-as="fc" t-key="fc.id">
+                                            <tr t-on-click="() => this.viewProduct(fc.product_id)">
+                                                <td><strong><t t-esc="fc.product_name"/></strong></td>
+                                                <td class="text-center"><t t-esc="formatDecimal(fc.forecast_qty)"/></td>
+                                                <td class="text-center">
+                                                    <span t-att-class="'badge ' + (fc.confidence >= 70 ? 'badge-success' : fc.confidence >= 50 ? 'badge-warning' : 'badge-danger')">
+                                                        <t t-esc="fc.confidence"/>%
+                                                    </span>
+                                                </td>
+                                                <td class="text-center"><t t-esc="fc.notes || 'Estable'"/></td>
+                                                <td class="text-center"><span class="badge badge-secondary"><t t-esc="fc.method"/></span></td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </t>
+                            <t t-else="">
+                                <div class="empty-state">
+                                    <i class="fa fa-line-chart fa-2x"/>
+                                    <p>Sin pronósticos. Ve a Configuración → Poblar Todos los Datos</p>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <!-- FILA 11: OPTIMIZACIONES DE REORDEN -->
+                <!-- ═══════════════════════════════════════════════════════════════ -->
+                <div class="section-title">
+                    <i class="fa fa-magic"/> OPTIMIZACIÓN DE REORDEN
+                </div>
+                <div class="content-row">
+                    <div class="panel panel-main">
+                        <div class="panel-header">
+                            <h3><i class="fa fa-sliders"/> Parámetros Optimizados</h3>
+                            <button class="btn btn-sm btn-outline-primary" t-on-click="openReorderOptimization">Ver Todos</button>
+                        </div>
+                        <div class="panel-body">
+                            <t t-if="state.reorderOptimizations &amp;&amp; state.reorderOptimizations.length > 0">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Producto</th>
+                                            <th class="text-center">ROP Actual</th>
+                                            <th class="text-center">ROP Optimizado</th>
+                                            <th class="text-center">EOQ Optimizado</th>
+                                            <th class="text-center">Safety Stock</th>
+                                            <th class="text-center">Riesgo Rotura</th>
+                                            <th class="text-center">Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="state.reorderOptimizations.slice(0, 10)" t-as="opt" t-key="opt.id">
+                                            <tr t-on-click="() => this.viewProduct(opt.product_id)">
+                                                <td><strong><t t-esc="opt.product_name"/></strong></td>
+                                                <td class="text-center"><t t-esc="formatDecimal(opt.current_rop)"/></td>
+                                                <td class="text-center text-primary"><strong><t t-esc="formatDecimal(opt.optimized_rop)"/></strong></td>
+                                                <td class="text-center"><t t-esc="formatDecimal(opt.optimized_eoq)"/></td>
+                                                <td class="text-center"><t t-esc="formatDecimal(opt.optimized_safety_stock)"/></td>
+                                                <td class="text-center">
+                                                    <span t-att-class="'badge ' + (opt.stockout_risk > 50 ? 'badge-danger' : opt.stockout_risk > 20 ? 'badge-warning' : 'badge-success')">
+                                                        <t t-esc="formatDecimal(opt.stockout_risk)"/>%
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span t-att-class="'badge ' + (opt.applied ? 'badge-success' : 'badge-secondary')">
+                                                        <t t-esc="opt.applied ? '✅ Aplicado' : '⏳ Pendiente'"/>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </t>
+                            <t t-else="">
+                                <div class="empty-state">
+                                    <i class="fa fa-magic fa-2x"/>
+                                    <p>Sin optimizaciones. Ve a Configuración → Poblar Todos los Datos</p>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+            </t>
+        </div>
+    </t>
+
+</templates>

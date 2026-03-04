@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<record id="view_pi_alert_log_tree" model="ir.ui.view">
+        <field name="name">pi.alert.log.tree</field>
+        <field name="model">pi.alert.log</field>
+        <field name="arch" type="xml">
+            <list string="Registro de Alertas" decoration-danger="severity=='critical'" decoration-warning="severity=='high'">
+                <field name="name"/>
+                <field name="severity"/>
+                <field name="message"/>
+                <field name="state"/>
+                <field name="create_date"/>
+                <button name="action_resolve" string="Resolver" type="object" icon="fa-check" invisible="state == 'resolved'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pi_alert_log_form" model="ir.ui.view">
+        <field name="name">pi.alert.log.form</field>
+        <field name="model">pi.alert.log</field>
+        <field name="arch" type="xml">
+            <form string="Alerta">
+                <header>
+                    <button name="action_resolve" string="Marcar como Resuelto" type="object" class="oe_highlight" invisible="state == 'resolved'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="alert_config_id"/>
+                            <field name="severity"/>
+                            <field name="create_date"/>
+                        </group>
+                        <group>
+                            <field name="res_model"/>
+                            <field name="res_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Mensaje">
+                            <field name="message"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Alert Configuration Action -->
+    <record id="action_purchase_intelligence_alert" model="ir.actions.act_window">
+        <field name="name">Configuración de Alertas</field>
+        <field name="res_model">purchase.intelligence.alert</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Alert Log Action -->
+    <record id="action_pi_alert_log" model="ir.actions.act_window">
+        <field name="name">Historial de Alertas</field>
+        <field name="res_model">pi.alert.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_new': 1}</field>
+    </record>
+
+</odoo>

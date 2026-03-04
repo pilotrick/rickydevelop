@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="seq_pi_automated_order" model="ir.sequence">
+            <field name="name">Automated Order Sequence</field>
+            <field name="code">pi.automated.order</field>
+            <field name="prefix">AO</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

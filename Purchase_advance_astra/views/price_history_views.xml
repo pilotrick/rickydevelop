@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<record id="view_pi_price_history_tree" model="ir.ui.view">
+        <field name="name">pi.price.history.tree</field>
+        <field name="model">pi.price.history</field>
+        <field name="arch" type="xml">
+            <list string="Historial de Precios">
+                <field name="date"/>
+                <field name="product_id"/>
+                <field name="partner_id"/>
+                <field name="price" widget="monetary"/>
+                <field name="quantity"/>
+                <field name="price_change" widget="percentage"/>
+                <field name="trend" widget="badge" 
+                       decoration-success="trend == 'down'" 
+                       decoration-danger="trend == 'up'" 
+                       decoration-info="trend == 'stable'"/>
+                <field name="purchase_order_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pi_price_history_graph" model="ir.ui.view">
+        <field name="name">pi.price.history.graph</field>
+        <field name="model">pi.price.history</field>
+        <field name="arch" type="xml">
+            <graph string="Tendencia de Precios" type="line">
+                <field name="date"/>
+                <field name="price" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_pi_price_history_search" model="ir.ui.view">
+        <field name="name">pi.price.history.search</field>
+        <field name="model">pi.price.history</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Historial de Precios">
+                <field name="product_id"/>
+                <field name="partner_id"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_pi_price_history" model="ir.actions.act_window">
+        <field name="name">Historial de Precios</field>
+        <field name="res_model">pi.price.history</field>
+        <field name="view_mode">list,graph</field>
+        <field name="context">{'search_default_last_90_days': 1}</field>
+    </record>
+
+</odoo>

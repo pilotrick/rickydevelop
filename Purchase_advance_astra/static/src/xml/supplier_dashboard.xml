@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="purchase_intelligence.SupplierPerformanceDashboard">
+        <div class="o_purchase_intelligence_dashboard">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2>Supplier Performance Management</h2>
+                <div>
+                    <button class="btn btn-secondary mr-2" t-on-click="viewScorecards">
+                        <i class="fa fa-list"/> View All Scorecards
+                    </button>
+                    <button class="btn btn-primary" t-on-click="refreshData">
+                        <i class="fa fa-refresh"/> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <t t-if="state.loading">
+                <div class="text-center p-5">
+                    <i class="fa fa-spinner fa-spin fa-3x"/>
+                    <p class="mt-3">Loading supplier data...</p>
+                </div>
+            </t>
+
+            <t t-else="">
+                <!-- Supplier Metrics Summary -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <h6 class="card-title">Active Suppliers</h6>
+                                <h3><t t-esc="state.data.supplier_metrics.total_suppliers"/></h3>
+                                <small><t t-esc="state.data.supplier_metrics.strategic_suppliers"/> strategic</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body">
+                                <h6 class="card-title">Average Score</h6>
+                                <h3><t t-esc="state.data.supplier_metrics.avg_score.toFixed(1)"/>/10</h3>
+                                <small>Supplier performance</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body">
+                                <h6 class="card-title">On-Time Delivery</h6>
+                                <h3><t t-esc="state.data.supplier_metrics.otd_rate"/>%</h3>
+                                <small>Last 30 days</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body">
+                                <h6 class="card-title">High Risk</h6>
+                                <h3><t t-esc="state.data.supplier_metrics.high_risk_count"/></h3>
+                                <small>Suppliers need attention</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Suppliers -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Top Performing Suppliers</h5>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Supplier</th>
+                                            <th class="text-center">Score</th>
+                                            <th class="text-right">Spend (30d)</th>
+                                            <th class="text-center">Risk</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="state.data.top_suppliers" t-as="supplier" t-key="supplier.id">
+                                            <tr style="cursor: pointer;" t-on-click="() => this.viewSupplier(supplier.id)">
+                                                <td>
+                                                    <strong><t t-esc="supplier.name"/></strong>
+                                                    <t t-if="supplier.is_strategic">
+                                                        <span class="badge badge-info ml-2">Strategic</span>
+                                                    </t>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span t-att-class="'font-weight-bold ' + getScoreClass(supplier.score)">
+                                                        <t t-esc="supplier.score.toFixed(1)"/>
+                                                    </span>
+                                                </td>
+                                                <td class="text-right"><t t-esc="formatCurrency(supplier.spend)"/></td>
+                                                <td class="text-center">
+                                                    <span t-att-class="'badge ' + getRiskClass(supplier.risk_level)">
+                                                        <t t-esc="supplier.risk_level.toUpperCase()"/>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Risk Suppliers -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-warning">
+                                <h5 class="mb-0">Suppliers Requiring Attention</h5>
+                            </div>
+                            <div class="card-body">
+                                <t t-if="state.data.risk_suppliers.length > 0">
+                                    <div class="list-group">
+                                        <t t-foreach="state.data.risk_suppliers" t-as="supplier" t-key="supplier.id">
+                                            <a href="#" class="list-group-item list-group-item-action" t-on-click="() => this.viewSupplier(supplier.id)">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <h6 class="mb-1"><t t-esc="supplier.name"/></h6>
+                                                        <small class="text-muted"><t t-esc="supplier.reason"/></small>
+                                                    </div>
+                                                    <div class="text-right">
+                                                        <div>
+                                                            <span class="badge badge-danger">
+                                                                Score: <t t-esc="supplier.score.toFixed(1)"/>
+                                                            </span>
+                                                        </div>
+                                                        <small class="text-muted">
+                                                            <t t-esc="formatCurrency(supplier.spend)"/>
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </t>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <p class="text-muted text-center py-4">All suppliers performing well</p>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Scorecards -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Recent Supplier Evaluations</h5>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Supplier</th>
+                                            <th class="text-center">Quality</th>
+                                            <th class="text-center">Delivery</th>
+                                            <th class="text-center">Price</th>
+                                            <th class="text-center">Service</th>
+                                            <th class="text-center">Innovation</th>
+                                            <th class="text-center">Overall</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="state.data.scorecards" t-as="scorecard" t-key="scorecard.id">
+                                            <tr>
+                                                <td><t t-esc="scorecard.date"/></td>
+                                                <td><t t-esc="scorecard.supplier_name"/></td>
+                                                <td class="text-center"><t t-esc="scorecard.score_quality.toFixed(1)"/></td>
+                                                <td class="text-center"><t t-esc="scorecard.score_delivery.toFixed(1)"/></td>
+                                                <td class="text-center"><t t-esc="scorecard.score_price.toFixed(1)"/></td>
+                                                <td class="text-center"><t t-esc="scorecard.score_service.toFixed(1)"/></td>
+                                                <td class="text-center"><t t-esc="scorecard.score_innovation.toFixed(1)"/></td>
+                                                <td class="text-center">
+                                                    <strong t-att-class="getScoreClass(scorecard.overall_score)">
+                                                        <t t-esc="scorecard.overall_score.toFixed(1)"/>
+                                                    </strong>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

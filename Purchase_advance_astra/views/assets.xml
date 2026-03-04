@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <template id="assets_backend" inherit_id="web.assets_backend">
+            <xpath expr="." position="inside">
+                <!-- JavaScript -->
+                <script type="text/javascript" src="/Purchase_advance_astra/static/src/js/dashboards/master_dashboard.js"/>
+                <script type="text/javascript" src="/Purchase_advance_astra/static/src/js/dashboards/inventory_dashboard.js"/>
+                <script type="text/javascript" src="/Purchase_advance_astra/static/src/js/dashboards/supplier_dashboard.js"/>
+                
+                <!-- SCSS -->
+                <link rel="stylesheet" type="text/scss" href="/Purchase_advance_astra/static/src/scss/dashboard.scss"/>
+            </xpath>
+        </template>
+    </data>
+</odoo>

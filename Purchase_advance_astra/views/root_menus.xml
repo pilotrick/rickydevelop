@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Root Menu - Must load first as other views reference this -->
+    <menuitem id="menu_purchase_intelligence_root"
+              name="Inteligencia de Compras"
+              sequence="50"
+              web_icon="Purchase_advance_astra,static/description/icon.png"/>
+
+    <!-- Integration with existing Purchase App -->
+    <menuitem id="menu_purchase_intelligence_integrated"
+              name="Inteligencia IA"
+              parent="purchase.menu_purchase_root"
+              sequence="99"/>
+</odoo>

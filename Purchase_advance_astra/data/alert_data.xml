@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="alert_stock_low" model="purchase.intelligence.alert">
+            <field name="name">Alerta de Stock Bajo (Crítico)</field>
+            <field name="model_id" ref="product.model_product_product"/>
+            <field name="trigger_condition">stock_low</field>
+            <field name="priority">critical</field>
+            <field name="action_type">activity</field>
+        </record>
+
+        <record id="alert_price_spike" model="purchase.intelligence.alert">
+            <field name="name">Incremento de Precio Significativo (>15%)</field>
+            <field name="model_id" ref="purchase.model_purchase_order_line"/>
+            <field name="trigger_condition">price_spike</field>
+            <field name="threshold_value">15.0</field>
+            <field name="priority">high</field>
+            <field name="action_type">notification</field>
+        </record>
+
+        <record id="alert_supplier_risk" model="purchase.intelligence.alert">
+            <field name="name">Riesgo de Proveedor Detectado</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="trigger_condition">supplier_risk</field>
+            <field name="priority">medium</field>
+            <field name="action_type">email</field>
+        </record>
+    </data>
+</odoo>

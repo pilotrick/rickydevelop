@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Grupos de Seguridad para Funcionalidades de Almacén -->
+        
+        <!-- Grupo: Usuario de Inteligencia de Almacén -->
+        <record id="group_warehouse_intelligence_user" model="res.groups">
+            <field name="name">Usuario de Inteligencia de Almacén</field>
+            <field name="category_id" ref="base.module_category_inventory_purchase"/>
+            <field name="implied_ids" eval="[(4, ref('stock.group_stock_user'))]"/>
+            <field name="comment">Usuario con acceso a dashboards de inteligencia por almacén y reportes básicos.</field>
+        </record>
+
+        <!-- Grupo: Gerente de Inteligencia de Almacén -->
+        <record id="group_warehouse_intelligence_manager" model="res.groups">
+            <field name="name">Gerente de Inteligencia de Almacén</field>
+            <field name="category_id" ref="base.module_category_inventory_purchase"/>
+            <field name="implied_ids" eval="[(4, ref('group_warehouse_intelligence_user'))]"/>
+            <field name="comment">Gerente con acceso completo a configuración y análisis avanzados por almacén.</field>
+        </record>
+
+        <!-- Grupo: Administrador de Inteligencia de Almacén -->
+        <record id="group_warehouse_intelligence_admin" model="res.groups">
+            <field name="name">Administrador de Inteligencia de Almacén</field>
+            <field name="category_id" ref="base.module_category_inventory_purchase"/>
+            <field name="implied_ids" eval="[(4, ref('group_warehouse_intelligence_manager'))]"/>
+            <field name="comment">Administrador con acceso total a todas las funcionalidades de inteligencia por almacén.</field>
+        </record>
+
+        <!-- Reglas de Acceso para Warehouse Intelligence -->
+        
+        <!-- Acceso de lectura para usuarios -->
+        <record id="access_warehouse_intelligence_user" model="ir.model.access">
+            <field name="name">warehouse.intelligence.user</field>
+            <field name="model_id" ref="model_warehouse_intelligence"/>
+            <field name="group_id" ref="group_warehouse_intelligence_user"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Acceso completo para gerentes -->
+        <record id="access_warehouse_intelligence_manager" model="ir.model.access">
+            <field name="name">warehouse.intelligence.manager</field>
+            <field name="model_id" ref="model_warehouse_intelligence"/>
+            <field name="group_id" ref="group_warehouse_intelligence_manager"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Acceso completo para administradores -->
+        <record id="access_warehouse_intelligence_admin" model="ir.model.access">
+            <field name="name">warehouse.intelligence.admin</field>
+            <field name="model_id" ref="model_warehouse_intelligence"/>
+            <field name="group_id" ref="group_warehouse_intelligence_admin"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Reglas de Acceso para KPIs de Almacén -->
+        
+        <record id="access_purchase_intelligence_kpi_warehouse_user" model="ir.model.access">
+            <field name="name">purchase.intelligence.kpi.warehouse.user</field>
+            <field name="model_id" ref="purchase_advance_astra.model_purchase_intelligence_kpi"/>
+            <field name="group_id" ref="group_warehouse_intelligence_user"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="access_purchase_intelligence_kpi_warehouse_manager" model="ir.model.access">
+            <field name="name">purchase.intelligence.kpi.warehouse.manager</field>
+            <field name="model_id" ref="purchase_advance_astra.model_purchase_intelligence_kpi"/>
+            <field name="group_id" ref="group_warehouse_intelligence_manager"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Reglas de Acceso para Órdenes Automatizadas de Almacén -->
+        
+        <record id="access_pi_automated_order_warehouse_user" model="ir.model.access">
+            <field name="name">pi.automated.order.warehouse.user</field>
+            <field name="model_id" ref="purchase_advance_astra.model_pi_automated_order"/>
+            <field name="group_id" ref="group_warehouse_intelligence_user"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="access_pi_automated_order_warehouse_manager" model="ir.model.access">
+            <field name="name">pi.automated.order.warehouse.manager</field>
+            <field name="model_id" ref="purchase_advance_astra.model_pi_automated_order"/>
+            <field name="group_id" ref="group_warehouse_intelligence_manager"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Reglas de Registro para Acceso Multi-Almacén -->
+        
+        <!-- Los usuarios solo pueden ver inteligencia de sus almacenes asignados -->
+        <record id="rule_warehouse_intelligence_user" model="ir.rule">
+            <field name="name">Warehouse Intelligence User Access</field>
+            <field name="model_id" ref="model_warehouse_intelligence"/>
+            <field name="domain_force">[
+                '|',
+                ('warehouse_id', 'in', user.warehouse_ids.ids),
+                ('warehouse_id', '=', False)
+            ]</field>
+            <field name="groups" eval="[(4, ref('group_warehouse_intelligence_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Los gerentes pueden ver todos los almacenes -->
+        <record id="rule_warehouse_intelligence_manager" model="ir.rule">
+            <field name="name">Warehouse Intelligence Manager Access</field>
+            <field name="model_id" ref="model_warehouse_intelligence"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_warehouse_intelligence_manager'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Regla para KPIs de almacén -->
+        <record id="rule_purchase_intelligence_kpi_warehouse" model="ir.rule">
+            <field name="name">Purchase Intelligence KPI Warehouse Access</field>
+            <field name="model_id" ref="purchase_advance_astra.model_purchase_intelligence_kpi"/>
+            <field name="domain_force">[
+                '|',
+                ('warehouse_id', 'in', user.warehouse_ids.ids),
+                ('warehouse_id', '=', False)
+            ]</field>
+            <field name="groups" eval="[(4, ref('group_warehouse_intelligence_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Regla para órdenes automatizadas de almacén -->
+        <record id="rule_pi_automated_order_warehouse" model="ir.rule">
+            <field name="name">PI Automated Order Warehouse Access</field>
+            <field name="model_id" ref="purchase_advance_astra.model_pi_automated_order"/>
+            <field name="domain_force">[
+                '|',
+                ('warehouse_id', 'in', user.warehouse_ids.ids),
+                ('warehouse_id', '=', False)
+            ]</field>
+            <field name="groups" eval="[(4, ref('group_warehouse_intelligence_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Regla para productos con contexto de almacén -->
+        <record id="rule_product_template_warehouse_context" model="ir.rule">
+            <field name="name">Product Template Warehouse Context</field>
+            <field name="model_id" ref="product.model_product_template"/>
+            <field name="domain_force">[
+                '|',
+                ('current_warehouse_id', 'in', user.warehouse_ids.ids),
+                ('current_warehouse_id', '=', False)
+            ]</field>
+            <field name="groups" eval="[(4, ref('group_warehouse_intelligence_user'))]"/>
+        </record>
+
+        <!-- Permisos de Menú -->
+        
+        <!-- Menú de Dashboard de Almacén - Solo usuarios -->
+        <record id="menu_warehouse_dashboard_access" model="ir.ui.menu">
+            <field name="name">Dashboard de Almacén</field>
+            <field name="groups" eval="[(4, ref('group_warehouse_intelligence_user'))]"/>
+        </record>
+
+        <!-- Menú de Configuración de Almacén - Solo gerentes -->
+        <record id="menu_warehouse_config_access" model="ir.ui.menu">
+            <field name="name">Configuración de Almacén</field>
+            <field name="groups" eval="[(4, ref('group_warehouse_intelligence_manager'))]"/>
+        </record>
+
+        <!-- Menú de Administración - Solo administradores -->
+        <record id="menu_warehouse_admin_access" model="ir.ui.menu">
+            <field name="name">Administración de Almacén</field>
+            <field name="groups" eval="[(4, ref('group_warehouse_intelligence_admin'))]"/>
+        </record>
+
+        <!-- Reglas de Campo para Protección de Datos -->
+        
+        <!-- Los usuarios solo pueden editar campos específicos de su almacén -->
+        <record id="field_group_warehouse_user_edit" model="ir.ui.view">
+            <field name="name">field.group.warehouse.user.edit</field>
+            <field name="model">product.template</field>
+            <field name="groups" eval="[(4, ref('group_warehouse_intelligence_user'))]"/>
+            <field name="arch" type="xml">
+                <field name="warehouse_reorder_point" readonly="1"/>
+                <field name="warehouse_safety_stock" readonly="1"/>
+                <field name="warehouse_max_stock" readonly="1"/>
+                <field name="warehouse_order_multiple" readonly="1"/>
+            </field>
+        </record>
+
+        <!-- Los gerentes pueden editar campos de configuración -->
+        <record id="field_group_warehouse_manager_edit" model="ir.ui.view">
+            <field name="name">field.group.warehouse.manager.edit</field>
+            <field name="model">product.template</field>
+            <field name="groups" eval="[(4, ref('group_warehouse_intelligence_manager'))]"/>
+            <field name="arch" type="xml">
+                <field name="warehouse_reorder_point" readonly="0"/>
+                <field name="warehouse_safety_stock" readonly="0"/>
+                <field name="warehouse_max_stock" readonly="0"/>
+                <field name="warehouse_order_multiple" readonly="0"/>
+            </field>
+        </record>
+
+    </data>
+</odoo>

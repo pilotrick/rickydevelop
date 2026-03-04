@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- SMART INTER-WAREHOUSE TRANSFERS                                          -->
+    <!-- Intelligent suggestions to balance stock between warehouses               -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- List View -->
+    <record id="view_smart_transfer_list" model="ir.ui.view">
+        <field name="name">pi.smart.transfer.list</field>
+        <field name="model">pi.smart.transfer</field>
+        <field name="arch" type="xml">
+            <list string="Sugerencias de Transferencia" 
+                  decoration-danger="priority == 'critical'"
+                  decoration-warning="priority == 'high'"
+                  decoration-muted="transfer_status == 'cancelled'"
+                  decoration-success="transfer_status == 'completed'">
+                <field name="product_id" string="Producto"/>
+                <field name="source_warehouse_id" string="Origen"/>
+                <field name="source_available" string="Stock Origen"/>
+                <field name="dest_warehouse_id" string="Destino"/>
+                <field name="dest_available" string="Stock Destino"/>
+                <field name="suggested_qty" string="Cantidad" sum="suggested_qty"/>
+                <field name="days_until_stockout" string="Días hasta Rotura" avg="1"/>
+                <field name="priority" string="Prioridad" widget="badge" 
+                       decoration-danger="priority == 'critical'"
+                       decoration-warning="priority == 'high'"
+                       decoration-info="priority == 'medium'"
+                       decoration-success="priority == 'low'"/>
+                <field name="transfer_value" string="Valor" widget="monetary" sum="transfer_value"/>
+                <field name="transfer_status" string="Estado" widget="badge"
+                       decoration-success="transfer_status == 'completed'"
+                       decoration-info="transfer_status in ('approved', 'in_transit')"
+                       decoration-warning="transfer_status == 'suggested'"
+                       decoration-muted="transfer_status == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_smart_transfer_form" model="ir.ui.view">
+        <field name="name">pi.smart.transfer.form</field>
+        <field name="model">pi.smart.transfer</field>
+        <field name="arch" type="xml">
+            <form string="Sugerencia de Transferencia">
+                <header>
+                    <button name="action_create_transfer" type="object" string="🔄 Crear Transferencia" 
+                            invisible="transfer_status != 'suggested'" class="oe_highlight"/>
+                    <button name="action_complete" type="object" string="✅ Completar"
+                            invisible="transfer_status not in ('approved', 'in_transit')"/>
+                    <button name="action_cancel" type="object" string="❌ Cancelar"
+                            invisible="transfer_status != 'suggested'"/>
+                    <field name="transfer_status" widget="statusbar" 
+                           statusbar_visible="suggested,approved,in_transit,completed"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button type="object" name="action_view_picking" string="Ver Transferencia" 
+                                icon="fa-truck" invisible="not picking_id"/>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="📦 Producto">
+                            <field name="product_id"/>
+                            <field name="product_value" widget="monetary"/>
+                        </group>
+                        <group string="🎯 Prioridad">
+                            <field name="priority" widget="badge"/>
+                            <field name="days_until_stockout"/>
+                        </group>
+                    </group>
+                    
+                    <group string="🔀 Detalles de Transferencia">
+                        <group string="Almacén Origen (Excedente)">
+                            <field name="source_warehouse_id"/>
+                            <field name="source_stock"/>
+                            <field name="source_available" decoration-success="source_available > 50"/>
+                        </group>
+                        <group string="Almacén Destino (Faltante)">
+                            <field name="dest_warehouse_id"/>
+                            <field name="dest_stock"/>
+                            <field name="dest_available" decoration-danger="dest_available &lt; 10"/>
+                            <field name="dest_shortage"/>
+                        </group>
+                    </group>
+                    
+                    <group string="📊 Análisis">
+                        <group>
+                            <field name="suggested_qty" decoration-warning="suggested_qty > 0"/>
+                            <field name="transfer_value" widget="monetary"/>
+                        </group>
+                        <group>
+                            <field name="picking_id"/>
+                            <field name="transfer_date"/>
+                        </group>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Kanban View -->
+    <record id="view_smart_transfer_kanban" model="ir.ui.view">
+        <field name="name">pi.smart.transfer.kanban</field>
+        <field name="model">pi.smart.transfer</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="priority" class="o_kanban_mobile">
+                <field name="id"/>
+                <field name="product_id"/>
+                <field name="source_warehouse_id"/>
+                <field name="dest_warehouse_id"/>
+                <field name="suggested_qty"/>
+                <field name="priority"/>
+                <field name="transfer_status"/>
+                <field name="days_until_stockout"/>
+                <templates>
+                    <t t-name="card">
+                        <div t-att-class="'oe_kanban_color_' + (record.priority.value === 'critical' ? 'danger' : record.priority.value === 'high' ? 'warning' : 'default')">
+                            <div class="oe_kanban_content">
+                                <div class="o_kanban_record_top">
+                                    <strong><field name="product_id"/></strong>
+                                    <field name="priority" widget="badge"/>
+                                </div>
+                                <div class="o_kanban_record_body">
+                                    <p class="mb-1">
+                                        <span class="badge bg-secondary"><field name="source_warehouse_id"/></span>
+                                        → 
+                                        <span class="badge bg-primary"><field name="dest_warehouse_id"/></span>
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Cantidad:</strong> <field name="suggested_qty"/>
+                                        <br/>
+                                        <small class="text-muted">
+                                            ⏰ <field name="days_until_stockout"/> días hasta rotura
+                                        </small>
+                                    </p>
+                                </div>
+                                <div class="o_kanban_record_bottom">
+                                    <field name="transfer_status" widget="badge"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_smart_transfer_search" model="ir.ui.view">
+        <field name="name">pi.smart.transfer.search</field>
+        <field name="model">pi.smart.transfer</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Transferencias">
+                <field name="product_id"/>
+                <field name="source_warehouse_id"/>
+                <field name="dest_warehouse_id"/>
+                
+                <filter string="Pendientes" name="pending" 
+                        domain="[('transfer_status', '=', 'suggested')]"/>
+                <filter string="Críticas" name="critical" 
+                        domain="[('priority', '=', 'critical')]"/>
+                <filter string="Alta Prioridad" name="high" 
+                        domain="[('priority', 'in', ['critical', 'high'])]"/>
+                <filter string="En Tránsito" name="in_transit" 
+                        domain="[('transfer_status', '=', 'in_transit')]"/>
+                
+                <separator/>
+                <filter string="Agrupar por Prioridad" name="group_priority" context="{'group_by': 'priority'}"/>
+                <filter string="Agrupar por Estado" name="group_status" context="{'group_by': 'transfer_status'}"/>
+                <filter string="Agrupar por Almacén Origen" name="group_source" context="{'group_by': 'source_warehouse_id'}"/>
+                <filter string="Agrupar por Almacén Destino" name="group_dest" context="{'group_by': 'dest_warehouse_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Pivot View -->
+    <record id="view_smart_transfer_pivot" model="ir.ui.view">
+        <field name="name">pi.smart.transfer.pivot</field>
+        <field name="model">pi.smart.transfer</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Transferencias">
+                <field name="source_warehouse_id" type="row"/>
+                <field name="dest_warehouse_id" type="col"/>
+                <field name="suggested_qty" type="measure"/>
+                <field name="transfer_value" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_smart_transfer" model="ir.actions.act_window">
+        <field name="name">🔄 Transferencias Inteligentes</field>
+        <field name="res_model">pi.smart.transfer</field>
+        <field name="view_mode">kanban,list,form,pivot</field>
+        <field name="search_view_id" ref="view_smart_transfer_search"/>
+        <field name="context">{'search_default_pending': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay sugerencias de transferencia
+            </p>
+            <p>
+                El sistema analiza automáticamente los niveles de stock en todos los almacenes
+                y sugiere transferencias para equilibrar el inventario.
+            </p>
+            <p>
+                <strong>Características:</strong>
+                <ul>
+                    <li>🔴 Detecta productos con excedente en un almacén y escasez en otro</li>
+                    <li>⚡ Calcula automáticamente la cantidad óptima a transferir</li>
+                    <li>🎯 Prioriza por urgencia (días hasta rotura)</li>
+                    <li>💰 Muestra el impacto financiero de cada transferencia</li>
+                </ul>
+            </p>
+        </field>
+    </record>
+
+    <!-- Server Action: Generate Suggestions -->
+    <record id="action_generate_transfer_suggestions" model="ir.actions.server">
+        <field name="name">Generar Sugerencias de Transferencia</field>
+        <field name="model_id" ref="model_pi_smart_transfer"/>
+        <field name="state">code</field>
+        <field name="code">
+model.cron_generate_transfer_suggestions()
+        </field>
+    </record>
+
+    <!-- Menu -->
+    <menuitem id="menu_smart_transfer" 
+              name="🔄 Transferencias IA" 
+              parent="menu_purchase_intelligence_root" 
+              action="action_smart_transfer" 
+              sequence="2"/>
+</odoo>

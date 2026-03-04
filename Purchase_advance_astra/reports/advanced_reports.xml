@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+    <!-- Monthly Executive Report -->
+    <record id="action_report_executive" model="ir.actions.report">
+        <field name="name">Reporte Ejecutivo Mensual</field>
+        <field name="model">purchase.intelligence.kpi</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">Purchase_advance_astra.report_executive</field>
+    </record>
+
+    <template id="report_executive">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page">
+                    <h1 class="text-center">Reporte Ejecutivo de Compras</h1>
+                    <h4 class="text-center mb-4">Período: Último Mes</h4>
+                    
+                    <h3>KPIs Principales</h3>
+                    <table class="table table-sm table-striped">
+                        <thead><tr><th>KPI</th><th>Valor</th><th>Objetivo</th><th>Estado</th></tr></thead>
+                        <tbody>
+                            <t t-foreach="env['purchase.intelligence.kpi'].search([], limit=15)" t-as="kpi">
+                                <tr>
+                                    <td><t t-esc="kpi.name"/></td>
+                                    <td><t t-esc="'%.2f' % kpi.value"/></td>
+                                    <td><t t-esc="'%.2f' % kpi.target"/></td>
+                                    <td><t t-esc="kpi.status.upper()"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <!-- Contract Performance Report -->
+    <record id="action_report_contracts" model="ir.actions.report">
+        <field name="name">Rendimiento de Contratos</field>
+        <field name="model">pi.contract.performance</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">Purchase_advance_astra.report_contracts</field>
+    </record>
+
+    <template id="report_contracts">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="contract">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Contrato: <t t-esc="contract.name"/></h2>
+                        <table class="table">
+                            <tr><td>Proveedor:</td><td><t t-esc="contract.partner_id.name"/></td></tr>
+                            <tr><td>Valor:</td><td>$<t t-esc="'{:,.2f}'.format(contract.contract_value)"/></td></tr>
+                            <tr><td>Utilización:</td><td><t t-esc="'%.1f' % contract.utilization_percent"/>%</td></tr>
+                            <tr><td>Ahorros:</td><td>$<t t-esc="'{:,.2f}'.format(contract.savings_achieved)"/></td></tr>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- Risk Matrix Report -->
+    <record id="action_report_risks" model="ir.actions.report">
+        <field name="name">Matriz de Riesgos</field>
+        <field name="model">pi.risk.assessment</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">Purchase_advance_astra.report_risks</field>
+    </record>
+
+    <template id="report_risks">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page">
+                    <h2>Matriz de Riesgos</h2>
+                    <table class="table table-sm">
+                        <thead><tr><th>Riesgo</th><th>Tipo</th><th>Score</th><th>Nivel</th></tr></thead>
+                        <tbody>
+                            <t t-foreach="env['pi.risk.assessment'].search([('state', '!=', 'closed')])" t-as="risk">
+                                <tr>
+                                    <td><t t-esc="risk.name"/></td>
+                                    <td><t t-esc="risk.risk_type"/></td>
+                                    <td><t t-esc="risk.risk_score"/></td>
+                                    <td><t t-esc="risk.risk_level"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+    </data>
+</odoo>

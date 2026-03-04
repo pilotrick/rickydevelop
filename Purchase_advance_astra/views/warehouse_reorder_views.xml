@@ -1,0 +1,260 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+
+    <!-- Tree View: Optimización de Reorden por Almacén -->
+    <record id="view_warehouse_reorder_optimization_tree" model="ir.ui.view">
+        <field name="name">pi.warehouse.reorder.optimization.tree</field>
+        <field name="model">pi.warehouse.reorder.optimization</field>
+        <field name="arch" type="xml">
+            <list string="Optimización de Reorden por Almacén" decoration-danger="priority=='critical'" decoration-warning="priority=='high'" decoration-info="priority=='medium'">
+                <field name="date"/>
+                <field name="warehouse_id"/>
+                <field name="product_id"/>
+                <field name="warehouse_stock" decoration-danger="warehouse_stock &lt;= 0"/>
+                <field name="warehouse_virtual_stock"/>
+                <field name="days_of_stock" decoration-danger="days_of_stock &lt; lead_time_days"/>
+                <field name="daily_usage_warehouse"/>
+                <field name="optimized_rop"/>
+                <field name="optimized_eoq"/>
+                <field name="stockout_risk" widget="progressbar"/>
+                <field name="priority" widget="badge" decoration-danger="priority=='critical'" decoration-warning="priority=='high'" decoration-info="priority=='medium'" decoration-success="priority=='low'"/>
+                <field name="applied" widget="boolean_toggle"/>
+                <field name="lead_time_days" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View: Optimización de Reorden por Almacén -->
+    <record id="view_warehouse_reorder_optimization_form" model="ir.ui.view">
+        <field name="name">pi.warehouse.reorder.optimization.form</field>
+        <field name="model">pi.warehouse.reorder.optimization</field>
+        <field name="arch" type="xml">
+            <form string="Optimización de Reorden por Almacén">
+                <header>
+                    <button name="action_apply_optimization" string="Aplicar Optimización" type="object" class="btn-primary" invisible="applied"/>
+                    <button name="action_view_warehouse_stock" string="Ver Stock en Almacén" type="object" class="btn-secondary"/>
+                    <field name="priority" widget="badge" decoration-danger="priority=='critical'" decoration-warning="priority=='high'" decoration-info="priority=='medium'" decoration-success="priority=='low'"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_warehouse_stock" type="object" class="oe_stat_button" icon="fa-cubes">
+                            <field name="warehouse_stock" widget="statinfo" string="Stock Almacén"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-calendar">
+                            <field name="days_of_stock" widget="statinfo" string="Días de Stock"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-exclamation-triangle">
+                            <field name="stockout_risk" widget="statinfo" string="Riesgo Rotura %"/>
+                        </button>
+                    </div>
+                    
+                    <div class="oe_title">
+                        <h1>
+                            <field name="product_id" readonly="1"/>
+                        </h1>
+                        <h2>
+                            <field name="warehouse_id" readonly="1"/>
+                        </h2>
+                    </div>
+                    
+                    <group>
+                        <group string="Información General">
+                            <field name="date"/>
+                            <field name="product_category"/>
+                            <field name="applied" widget="boolean_toggle"/>
+                        </group>
+                        <group string="Métricas de Demanda">
+                            <field name="daily_usage_warehouse"/>
+                            <field name="lead_time_days"/>
+                            <field name="demand_variability"/>
+                            <field name="service_level"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Stock y Movimientos" name="stock">
+                            <group>
+                                <group string="Stock Actual">
+                                    <field name="warehouse_stock"/>
+                                    <field name="warehouse_virtual_stock"/>
+                                    <field name="incoming_qty"/>
+                                    <field name="outgoing_qty"/>
+                                </group>
+                                <group string="Parámetros Actuales">
+                                    <field name="current_rop"/>
+                                    <field name="current_eoq"/>
+                                    <field name="current_safety_stock"/>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <page string="Optimización" name="optimization">
+                            <group>
+                                <group string="Parámetros Optimizados">
+                                    <field name="optimized_rop" widget="monetary" options="{'currency_field': 'False'}"/>
+                                    <field name="optimized_eoq" widget="monetary" options="{'currency_field': 'False'}"/>
+                                    <field name="optimized_safety_stock" widget="monetary" options="{'currency_field': 'False'}"/>
+                                </group>
+                                <group string="Análisis de Costos">
+                                    <field name="carrying_cost" widget="monetary"/>
+                                    <field name="ordering_cost" widget="monetary"/>
+                                    <field name="total_cost" widget="monetary"/>
+                                </group>
+                            </group>
+                            
+                            <group string="Recomendaciones">
+                                <field name="recommendation" nolabel="1" widget="text"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View: Optimización de Reorden por Almacén -->
+    <record id="view_warehouse_reorder_optimization_search" model="ir.ui.view">
+        <field name="name">pi.warehouse.reorder.optimization.search</field>
+        <field name="model">pi.warehouse.reorder.optimization</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Optimización por Almacén">
+                <field name="product_id"/>
+                <field name="warehouse_id"/>
+                <filter string="No Aplicado" name="not_applied" domain="[('applied', '=', False)]"/>
+                <filter string="Aplicado" name="applied" domain="[('applied', '=', True)]"/>
+                <filter string="Por Almacén" name="group_warehouse" context="{'group_by':'warehouse_id'}"/>
+                <filter string="Por Producto" name="group_product" context="{'group_by':'product_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Kanban View: Optimización de Reorden por Almacén -->
+    <record id="view_warehouse_reorder_optimization_kanban" model="ir.ui.view">
+        <field name="name">pi.warehouse.reorder.optimization.kanban</field>
+        <field name="model">pi.warehouse.reorder.optimization</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile" sample="1">
+                <field name="product_id"/>
+                <field name="warehouse_id"/>
+                <field name="warehouse_stock"/>
+                <field name="days_of_stock"/>
+                <field name="stockout_risk"/>
+                <field name="priority"/>
+                <field name="optimized_rop"/>
+                <field name="recommendation"/>
+                <field name="product_name"/>
+                <field name="warehouse_name"/>
+                <field name="date"/>
+                <field name="applied"/>
+                
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="o_kanban_record_top">
+                                <div class="o_kanban_record_headings">
+                                    <strong class="o_kanban_record_title">
+                                        <field name="product_name"/>
+                                    </strong>
+                                    <div class="o_kanban_record_subtitle">
+                                        <i class="fa fa-warehouse"/> <field name="warehouse_name"/>
+                                    </div>
+                                </div>
+                                <span class="float-end">
+                                    <field name="priority" widget="badge" decoration-danger="priority=='critical'" decoration-warning="priority=='high'" decoration-info="priority=='medium'" decoration-success="priority=='low'"/>
+                                </span>
+                            </div>
+                            
+                            <div class="o_kanban_record_body">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <strong>Stock:</strong> <field name="warehouse_stock"/>
+                                    </div>
+                                    <div class="col-6">
+                                        <strong>Días:</strong> <field name="days_of_stock"/>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-12">
+                                        <strong>Riesgo:</strong> 
+                                        <field name="stockout_risk" widget="progressbar"/>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-12">
+                                        <small><field name="recommendation"/></small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="o_kanban_record_bottom">
+                                <div class="oe_kanban_bottom_left">
+                                    <field name="date"/>
+                                </div>
+                                <div class="oe_kanban_bottom_right">
+                                    <field name="applied" widget="boolean_toggle"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Pivot View: Análisis por Almacén -->
+    <record id="view_warehouse_reorder_optimization_pivot" model="ir.ui.view">
+        <field name="name">pi.warehouse.reorder.optimization.pivot</field>
+        <field name="model">pi.warehouse.reorder.optimization</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Reorden por Almacén">
+                <field name="warehouse_id" type="row"/>
+                <field name="product_category" type="row"/>
+                <field name="warehouse_stock" type="measure"/>
+                <field name="optimized_rop" type="measure"/>
+                <field name="stockout_risk" type="measure"/>
+                <field name="total_cost" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Graph View: Gráficos de Análisis -->
+    <record id="view_warehouse_reorder_optimization_graph" model="ir.ui.view">
+        <field name="name">pi.warehouse.reorder.optimization.graph</field>
+        <field name="model">pi.warehouse.reorder.optimization</field>
+        <field name="arch" type="xml">
+            <graph string="Análisis de Reorden por Almacén" type="bar">
+                <field name="warehouse_id"/>
+                <field name="warehouse_stock" type="measure"/>
+                <field name="optimized_rop" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Action: Optimización de Reorden por Almacén -->
+    <record id="action_warehouse_reorder_optimization" model="ir.actions.act_window">
+        <field name="name">Optimización de Reorden por Almacén</field>
+        <field name="res_model">pi.warehouse.reorder.optimization</field>
+        <field name="view_mode">list,kanban,form,pivot,graph</field>
+        <field name="context">{'search_default_not_applied': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crear análisis de optimización por almacén
+            </p>
+            <p>
+                Analice los parámetros de reorden (ROP, EOQ, Stock de Seguridad) 
+                para cada producto en cada almacén específico.
+            </p>
+        </field>
+    </record>
+
+    <!-- Server Action: Generar Optimizaciones por Almacén -->
+    <record id="action_generate_warehouse_optimizations" model="ir.actions.server">
+        <field name="name">Generar Optimizaciones por Almacén</field>
+        <field name="model_id" ref="model_pi_warehouse_reorder_optimization"/>
+        <field name="state">code</field>
+        <field name="code">
+    action = model.action_generate_warehouse_optimizations()
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!-- Vista de formulario de orden de compra con TODA la información para decisiones -->
+    <record id="view_purchase_order_form_inherit_pi" model="ir.ui.view">
+        <field name="name">purchase.order.form.inherit.pi</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <!-- Botón de estadísticas -->
+            <div name="button_box" position="inside">
+                <button name="action_view_price_analysis" type="object" 
+                        class="oe_stat_button" icon="fa-line-chart"
+                        invisible="state == 'draft'">
+                    <span class="o_stat_text">Historial Precios</span>
+                </button>
+            </div>
+            
+            <!-- Agregar pestaña de Inteligencia -->
+            <notebook position="inside">
+                <page string="🧠 Inteligencia de Compras" name="purchase_intelligence">
+                    
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <!-- RESUMEN VISUAL DE DECISIÓN -->
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <div class="alert alert-info mb-3" role="alert" style="background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: #93c5fd;">
+                        <h5 style="margin-bottom: 8px; color: #1e40af;">
+                            <i class="fa fa-lightbulb-o me-2"/>Resumen de Decisión
+                        </h5>
+                        <p style="margin-bottom: 0; color: #1e3a8a; font-size: 13px;">
+                            Esta orden de compra ayudará a mantener el stock óptimo. 
+                            Revisa los productos críticos abajo antes de confirmar.
+                        </p>
+                    </div>
+                    
+                    <group>
+                        <group string="📋 Clasificación del Pedido">
+                            <field name="is_automated" widget="boolean_toggle"/>
+                            <field name="urgency_level" widget="badge"/>
+                            <field name="contract_id"/>
+                        </group>
+                        <group string="💰 Análisis de Ahorros">
+                            <field name="savings_estimated" widget="monetary"/>
+                        </group>
+                    </group>
+                    
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <!-- SECCIÓN 1: ANÁLISIS DE VENTAS -->
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <separator string="� ANÁLISIS DE VENTAS"/>
+                    <field name="order_line" readonly="1" nolabel="1">
+                        <list string="Ventas por Producto" create="false" delete="false" edit="false">
+                            <field name="product_id" string="Producto"/>
+                            <field name="sales_last_week" string="Últimos 7 días" decoration-muted="sales_last_week == 0"/>
+                            <field name="sales_last_month" string="Últimos 30 días" decoration-muted="sales_last_month == 0"/>
+                            <field name="avg_daily_sales" string="Promedio Diario"/>
+                        </list>
+                    </field>
+                    
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <!-- SECCIÓN 2: ESTADO DE INVENTARIO -->
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <separator string="📦 ESTADO DE INVENTARIO"/>
+                    <field name="order_line" readonly="1" nolabel="1">
+                        <list string="Stock por Producto" create="false" delete="false" edit="false">
+                            <field name="product_id" string="Producto"/>
+                            <field name="current_stock" string="Stock Total"
+                                   decoration-danger="current_stock &lt;= 0"
+                                   decoration-warning="current_stock &lt; sales_last_month"/>
+                            <field name="stock_coverage_days" string="Días de Cobertura"
+                                   decoration-warning="stock_coverage_days &lt; 15"
+                                   decoration-danger="stock_coverage_days &lt; 7"/>
+                            <field name="days_since_purchase" string="Días sin Comprar"
+                                   decoration-warning="days_since_purchase &gt; 60"/>
+                        </list>
+                    </field>
+                    
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <!-- SECCIÓN 2.1: DETALLE DE STOCK POR ALMACÉN -->
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <separator string="🏭 STOCK POR ALMACÉN"/>
+                    <separator string="🏭 STOCK POR ALMACÉN (DASHBOARD)"/>
+                     <field name="all_warehouse_intelligence_ids" mode="kanban" 
+                           context="{'kanban_view_ref': 'Purchase_advance_astra.view_product_warehouse_intelligence_kanban'}"/>
+                    
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <!-- SECCIÓN 2.5: PIPELINE DE VENTAS PENDIENTES (NUEVO) -->
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <separator string="📋 PIPELINE DE VENTAS PENDIENTES"/>
+                    <div class="alert alert-warning" role="alert" style="margin: 10px 0;">
+                        <strong>⚠️ Importante:</strong> Esta sección muestra la demanda pendiente que puede afectar el stock.
+                        Los productos con alto riesgo de ventas perdidas requieren atención inmediata.
+                    </div>
+                    <field name="order_line" readonly="1" nolabel="1">
+                        <list string="Pipeline de Ventas" create="false" delete="false" edit="false">
+                            <field name="product_id" string="Producto"/>
+                            <field name="pending_quotations_qty" string="En Cotizaciones"
+                                   decoration-info="pending_quotations_qty > 0"/>
+                            <field name="pending_quotations_count" string="# Cot." optional="show"/>
+                            <field name="confirmed_undelivered_qty" string="Confirmado Sin Entregar"
+                                   decoration-warning="confirmed_undelivered_qty > 0"/>
+                            <field name="confirmed_undelivered_count" string="# OV" optional="show"/>
+                            <field name="total_sales_pipeline" string="Total Pipeline"
+                                   decoration-danger="total_sales_pipeline > current_stock"/>
+                            <field name="current_stock" string="Stock Actual"/>
+                            <field name="lost_sales_risk_qty" string="Faltante"
+                                   decoration-danger="lost_sales_risk_qty > 0"/>
+                            <field name="lost_sales_risk_amount" string="$ Riesgo" widget="monetary"
+                                   decoration-danger="lost_sales_risk_amount > 0"/>
+                            <field name="projected_stockout_date" string="Fecha Agotamiento"
+                                   decoration-danger="projected_stockout_date"/>
+                        </list>
+                    </field>
+                    
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <!-- SECCIÓN 3: ANÁLISIS DE PRECIOS -->
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <separator string="💵 ANÁLISIS DE PRECIOS"/>
+                    <field name="order_line" readonly="1" nolabel="1">
+                        <list string="Comparación de Precios" create="false" delete="false" edit="false">
+                            <field name="product_id" string="Producto"/>
+                            <field name="price_unit" string="Precio Actual"/>
+                            <field name="last_purchase_price" string="Precio Anterior"/>
+                            <field name="price_variation" string="Variación %"
+                                   decoration-danger="price_variation &gt; 5"
+                                   decoration-success="price_variation &lt; -5"/>
+                        </list>
+                    </field>
+                    
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <!-- SECCIÓN 4: RECOMENDACIONES -->
+                    <!-- ═══════════════════════════════════════════════════════ -->
+                    <separator string="🎯 CANTIDADES RECOMENDADAS"/>
+                    <field name="order_line" readonly="1" nolabel="1">
+                        <list string="Recomendaciones" create="false" delete="false" edit="false">
+                            <field name="product_id" string="Producto"/>
+                            <field name="product_qty" string="Cantidad Pedida"/>
+                            <field name="total_sales_pipeline" string="Demanda Pipeline"/>
+                            <field name="qty_recommendation" string="Cantidad Sugerida"
+                                   decoration-info="qty_recommendation &gt; 0"/>
+                            <field name="recommendation_reason" string="Razón" optional="show"/>
+                        </list>
+                    </field>
+                </page>
+            </notebook>
+            
+
+            <!-- Vista simplificada de líneas de orden de compra -->
+            <field name="order_line" position="replace">
+                <field name="order_line" widget="section_and_note_one2many">
+                    <list string="Líneas de Orden" editable="bottom">
+                        <field name="astra_product_image" widget="image" options="{'size': [40, 40]}" optional="show"/>
+                        <field name="product_id" context="{'partner_id': parent.partner_id}"/>
+                        <field name="product_qty"/>
+                        <field name="product_uom_id" groups="uom.group_uom"/>
+                        <!-- Historical price fields from purchase_history module -->
+                        <field name="last_price1" optional="show"/>
+                        <field name="last_price2" optional="show"/>
+                        <field name="last_purchase_qty" optional="show"/>
+						<field name="warehouse_quantity_html" optional="show" widget="html"/>
+						<field name="last_purchase_price" optional="show"/>
+                        <field name="price_unit"/>
+                        <field name="weight" optional="show"/>
+                        <field name="total_weight" optional="show"/>
+                        <field name="volume" optional="show"/>
+                        <field name="total_volume" optional="show"/>
+                        <field name="qty_recommendation" string="Sugerido" optional="show"
+                               decoration-info="qty_recommendation &gt; 0"/>
+                        <field name="tax_ids" widget="many2many_tags" optional="hide"/>
+                        <field name="price_subtotal" sum="Total"/>
+                         <button name="action_open_intelligence" type="object" 
+                                icon="fa-info-circle" title="Ver Inteligencia de Stock"
+                                class="btn-link"/>
+                    </list>
+                </field>
+            </field>
+        </field>
+    </record>
+
+    <!-- Vista Form para Popup de Inteligencia en Línea de Compra -->
+    <record id="view_purchase_order_line_intelligence_form" model="ir.ui.view">
+        <field name="name">purchase.order.line.intelligence.form</field>
+        <field name="model">purchase.order.line</field>
+        <field name="arch" type="xml">
+            <form string="Análisis de Producto">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="product_id" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="product_qty" string="Cantidad en Pedido" readonly="1"/>
+                            <field name="price_unit" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="qty_recommendation" decoration-info="qty_recommendation &gt; 0" readonly="1"/>
+                            <field name="recommendation_reason" readonly="1"/>
+                        </group>
+                    </group>
+                    <separator string="📊 Análisis por Almacén (Kanban Dashboard)"/>
+                    <!-- Reutilizamos la vista Kanban rica que ya definimos -->
+                    <field name="warehouse_intelligence_ids" mode="kanban" 
+                           context="{'kanban_view_ref': 'Purchase_advance_astra.view_product_warehouse_intelligence_kanban'}"/>
+                </sheet>
+                <footer>
+                    <button string="Cerrar" class="btn-primary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Contract Views -->
+    <record id="view_pi_contract_tree" model="ir.ui.view">
+        <field name="name">pi.contract.tree</field>
+        <field name="model">pi.contract</field>
+        <field name="arch" type="xml">
+            <list string="Contratos">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="contract_type"/>
+                <field name="status" widget="badge"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="total_value" widget="monetary"/>
+                <field name="utilization_percentage" widget="progressbar"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pi_contract_form" model="ir.ui.view">
+        <field name="name">pi.contract.form</field>
+        <field name="model">pi.contract</field>
+        <field name="arch" type="xml">
+            <form string="Contrato de Compra">
+                <header>
+                    <field name="status" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nombre del Contrato..."/></h1>
+                    </div>
+                    <group>
+                        <group string="Información General">
+                            <field name="partner_id"/>
+                            <field name="contract_type"/>
+                        </group>
+                        <group string="Vigencia">
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                        </group>
+                    </group>
+                    <group string="Desempeño del Contrato">
+                        <group>
+                            <field name="total_value" widget="monetary"/>
+                            <field name="utilized_value" widget="monetary"/>
+                        </group>
+                        <group>
+                            <field name="utilization_percentage" widget="progressbar"/>
+                        </group>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Contract Action -->
+    <record id="action_pi_contract" model="ir.actions.act_window">
+        <field name="name">Contratos de Compra</field>
+        <field name="res_model">pi.contract</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

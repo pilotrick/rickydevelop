@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+<!-- Vista de árbol de inteligencia por almacén -->
+    <record id="view_warehouse_intelligence_tree" model="ir.ui.view">
+        <field name="name">warehouse.intelligence.tree</field>
+        <field name="model">warehouse.intelligence</field>
+        <field name="arch" type="xml">
+            <list string="Inteligencia por Almacén" default_order="efficiency_score desc">
+                <field name="warehouse_id" string="Almacén"/>
+                <field name="date" string="Fecha"/>
+                <field name="total_products" string="Total Productos" sum="total_products"/>
+                <field name="products_need_reorder" string="Necesitan Reorden" sum="products_need_reorder"/>
+                <field name="critical_products" string="Productos Críticos" sum="critical_products"/>
+                <field name="stock_availability" string="Disponibilidad (%)" widget="percentage"/>
+                <field name="stock_turnover" string="Rotación Inventario"/>
+                <field name="monthly_spend" string="Gasto Mensual" widget="monetary" options="{'currency_field': 'company_id.currency_id'}"/>
+                <field name="efficiency_score" string="Puntuación Eficiencia" widget="progressbar"/>
+                <field name="performance_rank" string="Rank Rendimiento"/>
+                <field name="alert_count" string="Alertas"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista de formulario de inteligencia por almacén -->
+    <record id="view_warehouse_intelligence_form" model="ir.ui.view">
+        <field name="name">warehouse.intelligence.form</field>
+        <field name="model">warehouse.intelligence</field>
+        <field name="arch" type="xml">
+            <form string="Inteligencia de Almacén">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="warehouse_id"/>
+                        <h1><field name="warehouse_id"/></h1>
+                    </div>
+                    <group>
+                        <group string="Información General">
+                            <field name="date"/>
+                            <field name="performance_rank" widget="badge" 
+                                   decoration-success="performance_rank == 1"
+                                   decoration-warning="performance_rank &lt;= 3"
+                                   decoration-danger="performance_rank &gt; 3"/>
+                        </group>
+                        <group string="Métricas Principales">
+                            <field name="total_products"/>
+                            <field name="products_need_reorder" widget="badge" decoration-danger="products_need_reorder > 0"/>
+                            <field name="critical_products" widget="badge" decoration-danger="critical_products > 0"/>
+                            <field name="stock_availability" widget="percentage" 
+                                   decoration-success="stock_availability &gt;= 95"
+                                   decoration-warning="stock_availability &lt; 95 and stock_availability &gt;= 85"
+                                   decoration-danger="stock_availability &lt; 85"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="📊 Análisis de Inventario" name="inventory_analysis">
+                            <group>
+                                <group string="Valores Monetarios">
+                                    <field name="total_stock_value" widget="monetary" options="{'currency_field': 'company_id.currency_id'}"/>
+                                    <field name="pending_order_value" widget="monetary" options="{'currency_field': 'company_id.currency_id'}"/>
+                                    <field name="monthly_spend" widget="monetary" options="{'currency_field': 'company_id.currency_id'}"/>
+                                </group>
+                                <group string="KPIs de Inventario">
+                                    <field name="stock_turnover"/>
+                                    <field name="days_of_inventory"/>
+                                    <field name="stockout_rate" widget="percentage"/>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <page string="📦 Análisis ABC" name="abc_analysis">
+                            <group>
+                                <group string="Productos Clase A (Alto Valor)">
+                                    <field name="abc_a_count"/>
+                                    <field name="abc_a_value" widget="monetary" options="{'currency_field': 'company_id.currency_id'}"/>
+                                </group>
+                                <group string="Productos Clase B (Valor Medio)">
+                                    <field name="abc_b_count"/>
+                                    <field name="abc_b_value" widget="monetary" options="{'currency_field': 'company_id.currency_id'}"/>
+                                </group>
+                                <group string="Productos Clase C (Bajo Valor)">
+                                    <field name="abc_c_count"/>
+                                    <field name="abc_c_value" widget="monetary" options="{'currency_field': 'company_id.currency_id'}"/>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <page string="🚚 Proveedores" name="supplier_analysis">
+                            <group>
+                                <group string="Métricas de Proveedores">
+                                    <field name="active_suppliers"/>
+                                    <field name="avg_delivery_time"/>
+                                    <field name="on_time_delivery_rate" widget="percentage"/>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <page string="⚠️ Alertas" name="alerts">
+                            <group>
+                                <group string="Resumen de Alertas">
+                                    <field name="alert_count" widget="badge" decoration-danger="alert_count > 0"/>
+                                    <field name="critical_alerts" widget="text"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista de comparación entre almacenes -->
+    <record id="view_warehouse_comparison_tree" model="ir.ui.view">
+        <field name="name">warehouse.comparison.tree</field>
+        <field name="model">warehouse.intelligence</field>
+        <field name="arch" type="xml">
+            <list string="Comparación de Almacenes">
+                <field name="warehouse_id" string="Almacén"/>
+                <field name="efficiency_score" string="Eficiencia" widget="progressbar"/>
+                <field name="performance_rank" string="Rank"/>
+                <field name="total_products" string="Total Productos"/>
+                <field name="critical_products" string="Críticos"/>
+                <field name="stock_availability" string="Disponibilidad (%)"/>
+                <field name="stock_turnover" string="Rotación"/>
+                <field name="monthly_spend" string="Gasto Mensual" widget="monetary" options="{'currency_field': 'company_id.currency_id'}"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Acción principal de inteligencia por almacén -->
+    <record id="action_warehouse_intelligence" model="ir.actions.act_window">
+        <field name="name">Inteligencia por Almacén</field>
+        <field name="res_model">warehouse.intelligence</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[]</field>
+        <field name="context">{'search_default_today': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Vista completa de inteligencia de compras específica por cada almacén.
+            </p>
+            <p>
+                • Análisis de inventario específico por almacén<br/>
+                • KPIs y métricas de rendimiento<br/>
+                • Comparación entre almacenes<br/>
+                • Alertas personalizadas por almacén<br/>
+            </p>
+        </field>
+    </record>
+
+    <!-- Acción de comparación entre almacenes -->
+    <record id="action_warehouse_comparison" model="ir.actions.act_window">
+        <field name="name">Comparación de Almacenes</field>
+        <field name="res_model">warehouse.intelligence</field>
+        <field name="view_mode">list</field>
+        <field name="domain">[]</field>
+        <field name="context">{'search_default_comparison': 1}</field>
+        <field name="help">
+            Comparación de rendimiento y métricas entre todos los almacenes.
+        </field>
+    </record>
+
+    <!-- Dashboard específico por almacén -->
+    <record id="action_warehouse_dashboard" model="ir.actions.client">
+        <field name="name">Dashboard por Almacén</field>
+        <field name="tag">purchase_intelligence.warehouse_dashboard</field>
+    </record>
+
+    <!-- Server Action: Generar inteligencia por almacén -->
+    <record id="action_generate_warehouse_intelligence" model="ir.actions.server">
+        <field name="name">Generar Inteligencia por Almacén</field>
+        <field name="model_id" ref="model_warehouse_intelligence"/>
+        <field name="state">code</field>
+        <field name="code">
+# Generar inteligencia específica para cada almacén
+model.action_generate_warehouse_intelligence()
+        </field>
+    </record>
+
+    <!-- Menú de inteligencia por almacén -->
+    <menuitem id="menu_warehouse_intelligence_root" name="Inteligencia por Almacén" parent="menu_purchase_intelligence_root" sequence="5"/>
+    
+    <menuitem id="menu_warehouse_intelligence" name="Inteligencia por Almacén" 
+              parent="menu_warehouse_intelligence_root" 
+              action="action_warehouse_intelligence" 
+              sequence="1"/>
+    
+    <menuitem id="menu_warehouse_comparison" name="Comparación de Almacenes" 
+              parent="menu_warehouse_intelligence_root" 
+              action="action_warehouse_comparison" 
+              sequence="2"/>
+    
+    <menuitem id="menu_warehouse_dashboard" name="Dashboard por Almacén" 
+              parent="menu_warehouse_intelligence_root" 
+              action="action_warehouse_dashboard" 
+              sequence="3"/>
+    </data>
+</odoo>

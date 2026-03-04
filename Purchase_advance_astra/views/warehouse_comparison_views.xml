@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- MATRIZ DE COMPARACIÓN DE ALMACENES                                      -->
+    <!-- Vista para comparar stock entre almacenes y sugerir transferencias       -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Vista Lista: Comparación de Almacenes -->
+    <record id="view_warehouse_intelligence_comparison_tree" model="ir.ui.view">
+        <field name="name">warehouse.intelligence.comparison.tree</field>
+        <field name="model">warehouse.intelligence</field>
+        <field name="arch" type="xml">
+            <list string="Comparación de Almacenes"
+                  decoration-danger="critical_products &gt; 5"
+                  decoration-warning="low_stock_products &gt; 10">
+                
+                <field name="warehouse_id"/>
+                <field name="date"/>
+                <field name="performance_rank" string="Rank"/>
+                <field name="efficiency_score" widget="progressbar"/>
+                
+                <!-- Métricas de Stock -->
+                <field name="total_products" string="Productos"/>
+                <field name="critical_products" string="Críticos" 
+                       decoration-danger="critical_products &gt; 0"/>
+                <field name="low_stock_products" string="Stock Bajo"
+                       decoration-warning="low_stock_products &gt; 0"/>
+                <field name="products_need_reorder" string="Reorden"/>
+                
+                <!-- Valores -->
+                <field name="total_stock_value" string="Valor Stock" widget="monetary"/>
+                
+                <!-- KPIs -->
+                <field name="stock_availability" string="Disponibilidad %"
+                       decoration-success="stock_availability &gt;= 95"
+                       decoration-warning="stock_availability &gt;= 85 and stock_availability &lt; 95"
+                       decoration-danger="stock_availability &lt; 85"/>
+                <field name="stock_turnover" string="Rotación"/>
+                <field name="on_time_delivery_rate" string="Entrega a Tiempo %"/>
+                
+                <!-- Alertas -->
+                <field name="alert_count" string="Alertas"
+                       decoration-danger="alert_count &gt; 0"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista Form: Detalle de Almacén -->
+    <record id="view_warehouse_intelligence_comparison_form" model="ir.ui.view">
+        <field name="name">warehouse.intelligence.comparison.form</field>
+        <field name="model">warehouse.intelligence</field>
+        <field name="arch" type="xml">
+            <form string="Inteligencia de Almacén">
+                <sheet>
+                    <!-- Botones de Estadísticas -->
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" icon="fa-cubes">
+                            <field name="total_products" widget="statinfo" string="Productos"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-exclamation-triangle">
+                            <field name="critical_products" widget="statinfo" string="Críticos"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-money">
+                            <field name="total_stock_value" widget="statinfo" string="Valor Stock"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-trophy">
+                            <field name="performance_rank" widget="statinfo" string="Ranking"/>
+                        </button>
+                    </div>
+                    
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    
+                    <group>
+                        <group string="Información General">
+                            <field name="warehouse_id"/>
+                            <field name="date"/>
+                            <field name="efficiency_score" widget="progressbar"/>
+                        </group>
+                        <group string="Alertas">
+                            <field name="alert_count"/>
+                            <field name="critical_alerts"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="📊 Métricas de Stock" name="stock_metrics">
+                            <group>
+                                <group string="Conteos">
+                                    <field name="total_products"/>
+                                    <field name="critical_products"/>
+                                    <field name="low_stock_products"/>
+                                    <field name="products_need_reorder"/>
+                                </group>
+                                <group string="Valores">
+                                    <field name="total_stock_value"/>
+                                    <field name="pending_order_value"/>
+                                    <field name="monthly_spend"/>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <page string="📈 KPIs" name="kpis">
+                            <group>
+                                <group string="Inventario">
+                                    <field name="stock_turnover"/>
+                                    <field name="days_of_inventory"/>
+                                    <field name="stock_availability"/>
+                                    <field name="stockout_rate"/>
+                                </group>
+                                <group string="Proveedores">
+                                    <field name="active_suppliers"/>
+                                    <field name="avg_delivery_time"/>
+                                    <field name="on_time_delivery_rate"/>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <page string="🔠 Análisis ABC" name="abc_analysis">
+                            <group>
+                                <group string="Clase A (80% del valor)">
+                                    <field name="abc_a_count"/>
+                                    <field name="abc_a_value"/>
+                                </group>
+                                <group string="Clase B (15% del valor)">
+                                    <field name="abc_b_count"/>
+                                    <field name="abc_b_value"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="Clase C (5% del valor)">
+                                    <field name="abc_c_count"/>
+                                    <field name="abc_c_value"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista Kanban: Comparación Visual -->
+    <record id="view_warehouse_intelligence_comparison_kanban" model="ir.ui.view">
+        <field name="name">warehouse.intelligence.comparison.kanban</field>
+        <field name="model">warehouse.intelligence</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_dashboard" default_group_by="performance_rank">
+                <field name="warehouse_id"/>
+                <field name="date"/>
+                <field name="performance_rank"/>
+                <field name="efficiency_score"/>
+                <field name="total_products"/>
+                <field name="critical_products"/>
+                <field name="low_stock_products"/>
+                <field name="total_stock_value"/>
+                <field name="stock_availability"/>
+                <field name="alert_count"/>
+                
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <!-- Header con ranking -->
+                            <div class="o_kanban_record_top mb-2">
+                                <div class="o_kanban_record_headings">
+                                    <strong class="o_kanban_record_title">
+                                        🏭 <field name="warehouse_id"/>
+                                    </strong>
+                                </div>
+                                <span class="float-end badge bg-primary fs-6">
+                                    #<field name="performance_rank"/>
+                                </span>
+                            </div>
+                            
+                            <!-- Eficiencia -->
+                            <div class="mb-2">
+                                <small class="text-muted">Eficiencia:</small>
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" 
+                                         t-attf-style="width: #{record.efficiency_score.raw_value}%;"
+                                         t-att-class="record.efficiency_score.raw_value >= 80 ? 'bg-success' : (record.efficiency_score.raw_value >= 60 ? 'bg-warning' : 'bg-danger')">
+                                        <field name="efficiency_score"/>%
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Métricas en grid -->
+                            <div class="row g-1 mb-2">
+                                <div class="col-6">
+                                    <div class="border rounded p-1 text-center">
+                                        <small class="text-muted d-block">Productos</small>
+                                        <strong><field name="total_products"/></strong>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="border rounded p-1 text-center">
+                                        <small class="text-muted d-block">Disponibilidad</small>
+                                        <strong t-attf-class="#{record.stock_availability.raw_value >= 95 ? 'text-success' : (record.stock_availability.raw_value >= 85 ? 'text-warning' : 'text-danger')}">
+                                            <field name="stock_availability"/>%
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row g-1 mb-2">
+                                <div class="col-4">
+                                    <div class="border rounded p-1 text-center">
+                                        <small class="text-muted d-block">Críticos</small>
+                                        <strong class="text-danger"><field name="critical_products"/></strong>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="border rounded p-1 text-center">
+                                        <small class="text-muted d-block">Stock Bajo</small>
+                                        <strong class="text-warning"><field name="low_stock_products"/></strong>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="border rounded p-1 text-center">
+                                        <small class="text-muted d-block">Alertas</small>
+                                        <strong t-attf-class="#{record.alert_count.raw_value > 0 ? 'text-danger' : 'text-success'}">
+                                            <field name="alert_count"/>
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Valor de Stock -->
+                            <div class="bg-light rounded p-2 text-center">
+                                <small class="text-muted">Valor de Stock:</small>
+                                <strong class="d-block text-primary fs-5">
+                                    <field name="total_stock_value" widget="monetary"/>
+                                </strong>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Vista Pivot: Comparación por Métricas -->
+    <record id="view_warehouse_intelligence_comparison_pivot" model="ir.ui.view">
+        <field name="name">warehouse.intelligence.comparison.pivot</field>
+        <field name="model">warehouse.intelligence</field>
+        <field name="arch" type="xml">
+            <pivot string="Comparación de Almacenes">
+                <field name="warehouse_id" type="row"/>
+                <field name="total_products" type="measure"/>
+                <field name="critical_products" type="measure"/>
+                <field name="total_stock_value" type="measure"/>
+                <field name="stock_availability" type="measure"/>
+                <field name="efficiency_score" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Vista Graph: Comparación Visual -->
+    <record id="view_warehouse_intelligence_comparison_graph" model="ir.ui.view">
+        <field name="name">warehouse.intelligence.comparison.graph</field>
+        <field name="model">warehouse.intelligence</field>
+        <field name="arch" type="xml">
+            <graph string="Comparación de Almacenes" type="bar">
+                <field name="warehouse_id"/>
+                <field name="efficiency_score" type="measure"/>
+                <field name="stock_availability" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Vista Búsqueda -->
+    <record id="view_warehouse_intelligence_comparison_search" model="ir.ui.view">
+        <field name="name">warehouse.intelligence.comparison.search</field>
+        <field name="model">warehouse.intelligence</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Almacenes">
+                <field name="warehouse_id"/>
+                <field name="date"/>
+                
+                <filter string="Hoy" name="today" 
+                        domain="[('date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Última Semana" name="last_week" 
+                        domain="[('date', '>=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                
+                <separator/>
+                
+                <filter string="Con Productos Críticos" name="critical" 
+                        domain="[('critical_products', '&gt;', 0)]"/>
+                <filter string="Stock Bajo &gt; 5" name="low_stock" 
+                        domain="[('low_stock_products', '&gt;', 5)]"/>
+                <filter string="Disponibilidad &lt; 90%" name="low_availability" 
+                        domain="[('stock_availability', '&lt;', 90)]"/>
+                
+                <separator/>
+                
+            </search>
+        </field>
+    </record>
+
+    <!-- Acción: Matriz de Comparación -->
+    <record id="action_warehouse_comparison_matrix" model="ir.actions.act_window">
+        <field name="name">🏭 Matriz de Almacenes</field>
+        <field name="res_model">warehouse.intelligence</field>
+        <field name="view_mode">kanban,list,form,pivot,graph</field>
+        <field name="context">{
+            'search_default_today': 1
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay datos de inteligencia de almacenes para hoy.
+            </p>
+            <p>
+                Ejecute "Generar Inteligencia" para crear los análisis de cada almacén.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú: Añadir a menú principal -->
+    <menuitem id="menu_warehouse_comparison_matrix"
+              name="🏭 Matriz de Almacenes"
+              parent="menu_purchase_intelligence_root"
+              action="action_warehouse_comparison_matrix"
+              sequence="3"/>
+
+    <!-- Menú: Añadir al menú integrado de compras -->
+    <menuitem id="menu_warehouse_comparison_integrated"
+              name="🏭 Comparar Almacenes"
+              parent="menu_purchase_intelligence_integrated"
+              action="action_warehouse_comparison_matrix"
+              sequence="4"/>
+
+</odoo>

@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Vista de Lista de Productos con Filtro de Almacén -->
+        <record id="view_product_template_warehouse_list" model="ir.ui.view">
+            <field name="name">product.template.warehouse.list</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_list_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='qty_available']" position="after">
+                    <field name="warehouse_stock" string="Stock Almacén" optional="show"/>
+                    <field name="warehouse_days_of_stock" string="Días Stock" optional="show"/>
+                    <field name="warehouse_reorder_point" string="Reorden Almacén" optional="show"/>
+                    <field name="warehouse_urgency" string="Urgencia" widget="badge" optional="show"/>
+                </xpath>
+                
+                <!-- Agregar filtro de almacén -->
+                <xpath expr="//search" position="inside">
+                    <filter string="Mi Almacén" name="filter_my_warehouse" 
+                            domain="[('warehouse_stock', '>', 0)]"/>
+                    <separator/>
+                    <filter string="Críticos en Almacén" name="filter_critical_warehouse" 
+                            domain="[('warehouse_urgency', '=', 'critical')]"/>
+                    <filter string="Necesitan Reorden en Almacén" name="filter_reorder_warehouse" 
+                            domain="[('warehouse_needs_reorder', '=', True)]"/>
+                    <separator/>
+                    <filter string="Bajo Stock en Almacén" name="filter_low_stock_warehouse" 
+                            domain="[('warehouse_days_of_stock', '<', 7)]"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Vista de Formulario de Productos con Información de Almacén -->
+        <record id="view_product_template_warehouse_form" model="ir.ui.view">
+            <field name="name">product.template.warehouse.form</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_form_view"/>
+            <field name="arch" type="xml">
+                <!-- Agregar pestaña de información por almacén -->
+                <xpath expr="//notebook" position="inside">
+                    <page string="📦 Información por Almacén" name="warehouse_info">
+                        <group>
+                            <field name="warehouse_context" invisible="1"/>
+                            <group string="Selector de Almacén">
+                                <field name="current_warehouse_id" 
+                                       widget="selection" 
+                                       options="{'no_create': True}"/>
+                                <button name="action_update_warehouse_context" 
+                                        type="object" 
+                                        string="Actualizar Contexto"
+                                        class="btn-primary btn-sm"/>
+                            </group>
+                        </group>
+                        
+                        <notebook>
+                            <page string="📊 Stock Actual" name="warehouse_stock">
+                                <group>
+                                    <group string="Información de Stock">
+                                        <field name="warehouse_stock" readonly="1"/>
+                                        <field name="warehouse_available" readonly="1"/>
+                                        <field name="warehouse_virtual_available" readonly="1"/>
+                                        <field name="warehouse_incoming" readonly="1"/>
+                                        <field name="warehouse_outgoing" readonly="1"/>
+                                    </group>
+                                    <group string="Métricas de Stock">
+                                        <field name="warehouse_days_of_stock" readonly="1"/>
+                                        <field name="warehouse_stock_turnover" readonly="1"/>
+                                        <field name="warehouse_stock_coverage" readonly="1"/>
+                                        <field name="warehouse_stock_value" readonly="1" widget="monetary"/>
+                                    </group>
+                                </group>
+                            </page>
+                            
+                            <page string="🎯 Puntos de Reorden" name="warehouse_reorder">
+                                <group>
+                                    <group string="Configuración de Reorden">
+                                        <field name="warehouse_reorder_point"/>
+                                        <field name="warehouse_safety_stock"/>
+                                        <field name="warehouse_max_stock"/>
+                                        <field name="warehouse_order_multiple"/>
+                                    </group>
+                                    <group string="Cálculos Automáticos">
+                                        <field name="warehouse_daily_usage" readonly="1"/>
+                                        <field name="warehouse_lead_time" readonly="1"/>
+                                        <field name="warehouse_monthly_forecast" readonly="1"/>
+                                        <field name="warehouse_needs_reorder" readonly="1"/>
+                                    </group>
+                                </group>
+                            </page>
+                            
+                            <page string="📈 Consumo y Movimiento" name="warehouse_consumption">
+                                <group>
+                                    <group string="Consumo Diario">
+                                        <field name="warehouse_avg_daily_consumption" readonly="1"/>
+                                        <field name="warehouse_last_7_days" readonly="1"/>
+                                        <field name="warehouse_last_30_days" readonly="1"/>
+                                        <field name="warehouse_last_90_days" readonly="1"/>
+                                    </group>
+                                    <group string="Patrones de Movimiento">
+                                        <field name="warehouse_movement_pattern" readonly="1"/>
+                                        <field name="warehouse_seasonal_factor" readonly="1"/>
+                                        <field name="warehouse_trend_indicator" readonly="1"/>
+                                        <field name="warehouse_velocity" readonly="1"/>
+                                    </group>
+                                </group>
+                            </page>
+                            
+                            <page string="⚠️ Alertas y Riesgos" name="warehouse_alerts">
+                                <group>
+                                    <group string="Estado Actual">
+                                        <field name="warehouse_urgency" readonly="1" widget="badge"/>
+                                        <field name="warehouse_risk_level" readonly="1" widget="badge"/>
+                                        <field name="warehouse_stockout_risk" readonly="1"/>
+                                        <field name="warehouse_excess_risk" readonly="1"/>
+                                    </group>
+                                    <group string="Alertas Activas">
+                                        <field name="warehouse_alert_count" readonly="1"/>
+                                        <field name="warehouse_last_alert_date" readonly="1"/>
+                                        <field name="warehouse_critical_alerts" readonly="1" widget="text"/>
+                                    </group>
+                                </group>
+                            </page>
+                            
+                            <page string="🏪 Comparación entre Almacenes" name="warehouse_comparison">
+                                <field name="warehouse_comparison_data" readonly="1" widget="text"/>
+                            </page>
+                        </notebook>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Vista de Kanban de Productos con Información de Almacén -->
+        <record id="view_product_template_warehouse_kanban" model="ir.ui.view">
+            <field name="name">product.template.warehouse.kanban</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_kanban_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='qty_available']" position="after">
+                    <field name="warehouse_stock"/>
+                    <field name="warehouse_urgency"/>
+                    <field name="warehouse_days_of_stock"/>
+                </xpath>
+                
+                <xpath expr="//div[@class='oe_kanban_details']" position="inside">
+                    <div class="o_kanban_record_bottom">
+                        <div class="oe_kanban_bottom_left">
+                            <t t-if="record.warehouse_urgency.raw_value">
+                                <span t-att-class="'badge badge-' + ('danger' if record.warehouse_urgency.raw_value == 'critical' else 'warning' if record.warehouse_urgency.raw_value == 'high' else 'info')">
+                                    <t t-esc="record.warehouse_urgency.raw_value"/>
+                                </span>
+                            </t>
+                        </div>
+                        <div class="oe_kanban_bottom_right">
+                            <t t-if="record.warehouse_days_of_stock.raw_value">
+                                <small class="text-muted">
+                                    <t t-esc="record.warehouse_days_of_stock.raw_value"/> días
+                                </small>
+                            </t>
+                        </div>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Acción de Menú para Productos por Almacén -->
+        <record id="action_product_template_warehouse" model="ir.actions.act_window">
+            <field name="name">Productos por Almacén</field>
+            <field name="res_model">product.template</field>
+            <field name="view_mode">kanban,list,form</field>
+            <field name="view_id" ref="view_product_template_warehouse_kanban"/>
+            <field name="context">{
+                'default_type': 'product',
+                'search_default_filter_my_warehouse': 1,
+            }</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No hay productos configurados para este almacén
+                </p>
+                <p>
+                    Use esta vista para gestionar productos específicos de cada almacén,
+                    configurar puntos de reorden individuales y monitorear el stock
+                    por ubicación.
+                </p>
+            </field>
+        </record>
+
+        <!-- Elemento de Menú -->
+        <menuitem id="menu_product_template_warehouse"
+                  name="Productos por Almacén"
+                  parent="stock.menu_stock_inventory_control"
+                  action="action_product_template_warehouse"
+                  sequence="15"/>
+
+        <!-- Vista de Búsqueda Avanzada por Almacén -->
+        <record id="view_product_template_warehouse_search" model="ir.ui.view">
+            <field name="name">product.template.warehouse.search</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_search_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//search" position="inside">
+                    <separator/>
+                    <filter string="Con Stock en Almacén" name="has_warehouse_stock" 
+                            domain="[('warehouse_stock', '>', 0)]"/>
+                    <filter string="Sin Stock en Almacén" name="no_warehouse_stock" 
+                            domain="[('warehouse_stock', '<=', 0)]"/>
+                    <separator/>
+                    <filter string="Urgencia Crítica" name="critical_urgency" 
+                            domain="[('warehouse_urgency', '=', 'critical')]"/>
+                    <filter string="Urgencia Alta" name="high_urgency" 
+                            domain="[('warehouse_urgency', '=', 'high')]"/>
+                    <separator/>
+                    <filter string="Menos de 7 días" name="less_7_days" 
+                            domain="[('warehouse_days_of_stock', '<', 7)]"/>
+                    <filter string="Menos de 30 días" name="less_30_days" 
+                            domain="[('warehouse_days_of_stock', '<', 30)]"/>
+                    <separator/>
+                    <filter string="Necesitan Reorden" name="needs_reorder" 
+                            domain="[('warehouse_needs_reorder', '=', True)]"/>
+                </xpath>
+                
+                <xpath expr="//group" position="inside">
+                    <group string="Filtros de Almacén">
+                        <field name="current_warehouse_id"/>
+                        <field name="warehouse_urgency"/>
+                        <field name="warehouse_risk_level"/>
+                    </group>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Vista de Gráfico de Stock por Almacén -->
+        <record id="view_product_template_warehouse_graph" model="ir.ui.view">
+            <field name="name">product.template.warehouse.graph</field>
+            <field name="model">product.template</field>
+            <field name="arch" type="xml">
+                <graph string="Stock por Almacén">
+                    <field name="current_warehouse_id"/>
+                    <field name="warehouse_stock" type="measure"/>
+                    <field name="warehouse_days_of_stock" type="measure"/>
+                </graph>
+            </field>
+        </record>
+
+        <!-- Vista de Pivot por Almacén -->
+        <record id="view_product_template_warehouse_pivot" model="ir.ui.view">
+            <field name="name">product.template.warehouse.pivot</field>
+            <field name="model">product.template</field>
+            <field name="arch" type="xml">
+                <pivot string="Análisis por Almacén">
+                    <field name="current_warehouse_id" type="row"/>
+                    <field name="categ_id" type="col"/>
+                    <field name="warehouse_stock" type="measure"/>
+                    <field name="warehouse_stock_value" type="measure"/>
+                    <field name="warehouse_daily_usage" type="measure"/>
+                </pivot>
+            </field>
+        </record>
+
+    </data>
+</odoo>

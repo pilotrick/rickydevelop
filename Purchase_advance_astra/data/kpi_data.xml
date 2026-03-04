@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="kpi_ppv" model="purchase.intelligence.kpi">
+            <field name="name">Variación de Precio de Compra (PPV)</field>
+            <field name="kpi_type">financial</field>
+            <field name="value">2.3</field>
+            <field name="target_value">2.0</field>
+            <field name="description">Purchase Price Variance - PPV</field>
+        </record>
+
+        <record id="kpi_cost_savings" model="purchase.intelligence.kpi">
+            <field name="name">Ahorro de Costos</field>
+            <field name="kpi_type">financial</field>
+            <field name="value">125000</field>
+            <field name="target_value">150000</field>
+            <field name="description">Cost Savings - COST_SAVINGS</field>
+        </record>
+
+        <record id="kpi_po_cycle_time" model="purchase.intelligence.kpi">
+            <field name="name">Tiempo Ciclo Pedido</field>
+            <field name="kpi_type">operational</field>
+            <field name="value">16.0</field>
+            <field name="target_value">12.0</field>
+            <field name="description">Purchase Order Cycle Time in Hours - PO_CYCLE_TIME</field>
+        </record>
+
+        <record id="kpi_stock_availability" model="purchase.intelligence.kpi">
+            <field name="name">Disponibilidad de Stock</field>
+            <field name="kpi_type">inventory</field>
+            <field name="value">96.8</field>
+            <field name="target_value">98.0</field>
+            <field name="description">Stock Availability Percentage - STOCK_AVAILABILITY</field>
+        </record>
+
+        <record id="default_pi_config" model="purchase.intelligence.config">
+            <field name="name">Configuración Estándar</field>
+            <field name="service_level_target">95.0</field>
+            <field name="holding_cost_percentage">20.0</field>
+            <field name="weight_quality">30.0</field>
+            <field name="weight_delivery">25.0</field>
+            <field name="weight_price">20.0</field>
+            <field name="weight_service">15.0</field>
+            <field name="weight_innovation">10.0</field>
+        </record>
+    </data>
+</odoo>

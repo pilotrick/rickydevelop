@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Visual Intelligence Card -->
+    <t t-name="purchase_intelligence.VisualIntelligenceCard" owl="1">
+        <div class="pi-visual-card" t-att-class="'pi-card-' + (product.stockout_risk || 'none')">
+            <!-- Header with product name and risk indicator -->
+            <div class="pi-card-header">
+                <div class="pi-product-name">
+                    <i class="fa fa-cube me-2"/>
+                    <t t-esc="product.name"/>
+                </div>
+                <span class="pi-risk-badge" t-att-style="'background-color: ' + getRiskColor(product.stockout_risk)">
+                    <t t-esc="getRiskEmoji(product.stockout_risk)"/>
+                    <span class="ms-1"><t t-esc="product.stockout_risk?.toUpperCase() || 'OK'"/></span>
+                </span>
+            </div>
+            
+            <!-- Quick Stats Row -->
+            <div class="pi-stats-row">
+                <div class="pi-stat">
+                    <div class="pi-stat-label">Stock</div>
+                    <div class="pi-stat-value" t-att-class="product.qty_available &lt;= 0 ? 'text-danger' : product.qty_available &lt; 10 ? 'text-warning' : ''">
+                        <t t-esc="product.qty_available || 0"/>
+                    </div>
+                </div>
+                <div class="pi-stat">
+                    <div class="pi-stat-label">Días</div>
+                    <div class="pi-stat-value" t-att-class="product.days_of_stock &lt; 7 ? 'text-danger' : product.days_of_stock &lt; 14 ? 'text-warning' : 'text-success'">
+                        <t t-esc="product.days_of_stock || 0"/>
+                    </div>
+                </div>
+                <div class="pi-stat">
+                    <div class="pi-stat-label">Uso/Día</div>
+                    <div class="pi-stat-value text-muted">
+                        <t t-esc="product.daily_usage?.toFixed(1) || 0"/>
+                    </div>
+                </div>
+                <div class="pi-stat">
+                    <div class="pi-stat-label">ROP</div>
+                    <div class="pi-stat-value text-muted">
+                        <t t-esc="product.reorder_point || 0"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock Gauge Visual -->
+            <div class="pi-gauge-container">
+                <div class="pi-gauge-bar">
+                    <div class="pi-gauge-fill" 
+                         t-att-style="'width: ' + (product.fill_percent || 0) + '%; background-color: ' + getRiskColor(product.stockout_risk)"/>
+                </div>
+                <div class="pi-gauge-labels">
+                    <span>0</span>
+                    <span class="pi-rop-marker" t-att-style="'left: ' + ((product.reorder_point || 0) / (product.max_stock || 100) * 100) + '%'">
+                        ROP
+                    </span>
+                    <span><t t-esc="product.max_stock || 100"/></span>
+                </div>
+            </div>
+
+            <!-- Decision Summary -->
+            <t t-if="product.needs_reorder or product.stockout_risk in ('critical', 'high')">
+                <div class="pi-decision-box" t-att-class="'decision-' + (product.stockout_risk || 'none')">
+                    <div class="pi-decision-icon">
+                        <i t-att-class="'fa ' + (product.stockout_risk === 'critical' ? 'fa-bolt' : 'fa-exclamation-triangle')"/>
+                    </div>
+                    <div class="pi-decision-content">
+                        <div class="pi-decision-action">
+                            <t t-if="product.stockout_risk === 'critical'">🚨 PEDIR AHORA</t>
+                            <t t-elif="product.stockout_risk === 'high'">⚠️ PEDIR PRONTO</t>
+                            <t t-else="">📋 MONITOREAR</t>
+                        </div>
+                        <div class="pi-decision-qty">
+                            Cantidad sugerida: <strong><t t-esc="product.suggested_order_qty || 0"/></strong>
+                        </div>
+                    </div>
+                    <t t-if="showActions">
+                        <button class="btn btn-sm btn-primary pi-action-btn">
+                            <i class="fa fa-cart-plus"/> Crear PO
+                        </button>
+                    </t>
+                </div>
+            </t>
+
+            <!-- Expandable Details -->
+            <div class="pi-expand-toggle" t-on-click="toggleExpand">
+                <i t-att-class="state.expanded ? 'fa fa-chevron-up' : 'fa fa-chevron-down'"/>
+                <span t-if="!state.expanded">Ver más detalles</span>
+                <span t-else="">Ocultar detalles</span>
+            </div>
+
+            <t t-if="state.expanded">
+                <div class="pi-details">
+                    <div class="pi-detail-row">
+                        <span>Stock Seguridad:</span>
+                        <strong><t t-esc="product.safety_stock || 0"/></strong>
+                    </div>
+                    <div class="pi-detail-row">
+                        <span>EOQ (Cantidad Óptima):</span>
+                        <strong><t t-esc="product.eoq || 0"/></strong>
+                    </div>
+                    <div class="pi-detail-row">
+                        <span>Lead Time:</span>
+                        <strong><t t-esc="product.lead_time_days || 0"/> días</strong>
+                    </div>
+                    <div class="pi-detail-row">
+                        <span>Clasificación:</span>
+                        <span class="badge bg-secondary"><t t-esc="product.abc_classification || 'N/A'"/></span>
+                        <span class="badge bg-info"><t t-esc="product.fsn_classification || 'N/A'"/></span>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <!-- Mini Sparkline Chart -->
+    <t t-name="purchase_intelligence.MiniSparkline" owl="1">
+        <svg t-att-width="props.width" t-att-height="props.height" class="pi-sparkline" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <path t-att-d="getAreaD()" t-att-fill="getColor().fill" class="pi-sparkline-area"/>
+            <path t-att-d="getPathD()" t-att-stroke="getColor().stroke" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="pi-sparkline-line"/>
+        </svg>
+    </t>
+
+    <!-- Decision Summary Card -->
+    <t t-name="purchase_intelligence.DecisionSummaryCard" owl="1">
+        <div class="pi-decision-summary" t-att-class="getUrgencyClass()">
+            <div class="pi-decision-icon-container">
+                <i t-att-class="'fa ' + getIconClass()"/>
+            </div>
+            <div class="pi-decision-info">
+                <div class="pi-decision-title">
+                    <t t-esc="decision.action"/>
+                </div>
+                <div class="pi-decision-message">
+                    <t t-esc="decision.message"/>
+                </div>
+                <div class="pi-decision-product">
+                    <i class="fa fa-cube me-1"/>
+                    <t t-esc="product.name"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- Stock Gauge -->
+    <t t-name="purchase_intelligence.StockGauge" owl="1">
+        <div class="pi-stock-gauge">
+            <div class="pi-gauge-arc">
+                <svg viewBox="0 0 120 60" class="pi-gauge-svg">
+                    <!-- Background arc -->
+                    <path d="M 10 55 A 50 50 0 0 1 110 55" fill="none" stroke="#e5e7eb" stroke-width="10" stroke-linecap="round"/>
+                    <!-- Value arc -->
+                    <path d="M 10 55 A 50 50 0 0 1 110 55" fill="none" t-att-stroke="getColor()" stroke-width="10" stroke-linecap="round"
+                          t-att-stroke-dasharray="getPercentage() * 1.57 + ', 157'" class="pi-gauge-value"/>
+                </svg>
+                <div class="pi-gauge-center-value">
+                    <t t-esc="props.current"/>
+                </div>
+            </div>
+            <t t-if="showLabel">
+                <div class="pi-gauge-label" t-att-style="'color: ' + getColor()">
+                    <t t-esc="getLabel()"/>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <!-- Warehouse Mini Dashboard -->
+    <t t-name="purchase_intelligence.WarehouseMiniDashboard" owl="1">
+        <div class="pi-warehouse-dashboard">
+            <t t-if="productName">
+                <div class="pi-dashboard-product">
+                    <i class="fa fa-cube me-2"/>
+                    <t t-esc="productName"/>
+                </div>
+            </t>
+            
+            <!-- Total Summary -->
+            <div class="pi-dashboard-summary">
+                <div class="pi-summary-item">
+                    <span class="pi-summary-label">Stock Total</span>
+                    <span class="pi-summary-value"><t t-esc="getTotalStats().totalStock.toFixed(0)"/></span>
+                </div>
+                <div class="pi-summary-item">
+                    <span class="pi-summary-label">Necesitan Pedido</span>
+                    <span class="pi-summary-value" t-att-class="getTotalStats().needsReorder > 0 ? 'text-danger' : 'text-success'">
+                        <t t-esc="getTotalStats().needsReorder"/>
+                    </span>
+                </div>
+                <div class="pi-summary-item">
+                    <span class="pi-summary-label">Críticos</span>
+                    <span class="pi-summary-value" t-att-class="getTotalStats().criticalCount > 0 ? 'text-danger' : 'text-success'">
+                        <t t-esc="getTotalStats().criticalCount"/>
+                    </span>
+                </div>
+                <div class="pi-summary-item">
+                    <span class="pi-summary-label">Promedio Días</span>
+                    <span class="pi-summary-value"><t t-esc="getTotalStats().avgDaysOfStock.toFixed(0)"/></span>
+                </div>
+            </div>
+
+            <!-- Warehouse Cards -->
+            <div class="pi-warehouse-cards">
+                <t t-foreach="getWarehouseStats()" t-as="wh" t-key="wh.warehouse_id">
+                    <div class="pi-warehouse-mini-card" t-att-class="wh.statusClass">
+                        <div class="pi-wh-header">
+                            <i class="fa fa-warehouse me-1"/>
+                            <t t-esc="wh.warehouse_id"/>
+                        </div>
+                        <div class="pi-wh-stats">
+                            <div class="pi-wh-stat">
+                                <span class="pi-wh-label">Stock</span>
+                                <span class="pi-wh-value"><t t-esc="wh.qty_available"/></span>
+                            </div>
+                            <div class="pi-wh-stat">
+                                <span class="pi-wh-label">Días</span>
+                                <span class="pi-wh-value"><t t-esc="wh.days_of_stock"/></span>
+                            </div>
+                        </div>
+                        <t t-if="wh.actionRequired">
+                            <div class="pi-wh-action">
+                                <i class="fa fa-exclamation-triangle"/>
+                                Pedir: <t t-esc="wh.suggested_order_qty"/>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+
+</templates>

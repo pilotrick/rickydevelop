@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+    <!-- Daily Purchase Status Report -->
+    <record id="action_report_daily_purchase_status" model="ir.actions.report">
+        <field name="name">Reporte Diario de Estado de Compras</field>
+        <field name="model">purchase.intelligence.kpi</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">Purchase_advance_astra.report_daily_purchase_status</field>
+        <field name="report_file">Purchase_advance_astra.report_daily_purchase_status</field>
+        <field name="binding_model_id" ref="model_purchase_intelligence_kpi"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_daily_purchase_status">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page">
+                    <h2>Reporte Diario de Estado de Compras</h2>
+                    <p><strong>Fecha:</strong> <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%Y-%m-%d %H:%M')"/></p>
+                    
+                    <h3>Resumen Ejecutivo</h3>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Órdenes Activas:</strong></td>
+                            <td><t t-esc="env['purchase.order'].search_count([('state', 'in', ['purchase', 'done'])])"/></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Pendientes de Aprobación:</strong></td>
+                            <td><t t-esc="env['purchase.order'].search_count([('state', '=', 'to approve')])"/></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Productos Críticos:</strong></td>
+                            <td><t t-esc="env['product.product'].search_count([('qty_available', '&lt;', 10), ('type', '=', 'product')])"/></td>
+                        </tr>
+                    </table>
+
+                    <h3>KPIs Principales</h3>
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>KPI</th>
+                                <th>Valor Actual</th>
+                                <th>Objetivo</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="env['purchase.intelligence.kpi'].search([], limit=10, order='date desc')" t-as="kpi">
+                                <tr>
+                                    <td><t t-esc="kpi.name"/></td>
+                                    <td><t t-esc="'%.2f' % kpi.value"/></td>
+                                    <td><t t-esc="'%.2f' % kpi.target"/></td>
+                                    <td>
+                                        <span t-if="kpi.status == 'success'" class="badge badge-success">Bueno</span>
+                                        <span t-if="kpi.status == 'warning'" class="badge badge-warning">Advertencia</span>
+                                        <span t-if="kpi.status == 'danger'" class="badge badge-danger">Crítico</span>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+
+                    <h3>Alertas Activas</h3>
+                    <t t-set="alerts" t-value="env['pi.alert.log'].search([('state', '=', 'new')], limit=10, order='severity desc')"/>
+                    <t t-if="alerts">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Alerta</th>
+                                    <th>Severidad</th>
+                                    <th>Mensaje</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="alerts" t-as="alert">
+                                    <tr>
+                                        <td><t t-esc="alert.name"/></td>
+                                        <td><t t-esc="alert.severity"/></td>
+                                        <td><t t-esc="alert.message"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </t>
+                    <t t-else="">
+                        <p class="text-muted">No hay alertas activas.</p>
+                    </t>
+
+                    <h3>Órdenes Automatizadas Pendientes</h3>
+                    <t t-set="auto_orders" t-value="env['pi.automated.order'].search([('state', '=', 'suggested')], limit=10)"/>
+                    <t t-if="auto_orders">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                    <th>Proveedor</th>
+                                    <th>Urgencia</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="auto_orders" t-as="order">
+                                    <tr>
+                                        <td><t t-esc="order.product_id.name"/></td>
+                                        <td><t t-esc="order.suggested_qty"/></td>
+                                        <td><t t-esc="order.supplier_id.name if order.supplier_id else 'N/A'"/></td>
+                                        <td><t t-esc="order.urgency"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </t>
+                    <t t-else="">
+                        <p class="text-muted">No hay órdenes automatizadas pendientes.</p>
+                    </t>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <!-- Weekly Spend Analysis Report -->
+    <record id="action_report_weekly_spend" model="ir.actions.report">
+        <field name="name">Análisis Semanal de Gastos</field>
+        <field name="model">purchase.intelligence.analysis</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">Purchase_advance_astra.report_weekly_spend</field>
+        <field name="report_file">Purchase_advance_astra.report_weekly_spend</field>
+        <field name="binding_model_id" ref="model_purchase_intelligence_analysis"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_weekly_spend">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page">
+                    <h2>Análisis Semanal de Gastos</h2>
+                    <p><strong>Período:</strong> Últimos 7 días</p>
+                    
+                    <t t-set="week_ago" t-value="(datetime.datetime.now() - relativedelta(days=7)).date()"/>
+                    <t t-set="pos" t-value="env['purchase.order'].search([('date_order', '&gt;=', week_ago), ('state', 'in', ['purchase', 'done'])])"/>
+                    
+                    <h3>Resumen de Gastos</h3>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Total de Órdenes:</strong></td>
+                            <td><t t-esc="len(pos)"/></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Gasto Total:</strong></td>
+                            <td>$<t t-esc="'%.2f' % sum(pos.mapped('amount_total'))"/></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Gasto Promedio por Orden:</strong></td>
+                            <td>$<t t-esc="'%.2f' % (sum(pos.mapped('amount_total')) / len(pos) if pos else 0)"/></td>
+                        </tr>
+                    </table>
+
+                    <h3>Top 10 Proveedores por Gasto</h3>
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Proveedor</th>
+                                <th>Órdenes</th>
+                                <th>Monto Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-set="supplier_data" t-value="{}"/>
+                            <t t-foreach="pos" t-as="po">
+                                <t t-set="supplier_data" t-value="supplier_data.update({po.partner_id.id: supplier_data.get(po.partner_id.id, {'name': po.partner_id.name, 'count': 0, 'total': 0})}) or supplier_data"/>
+                                <t t-set="supplier_data[po.partner_id.id]['count']" t-value="supplier_data[po.partner_id.id]['count'] + 1"/>
+                                <t t-set="supplier_data[po.partner_id.id]['total']" t-value="supplier_data[po.partner_id.id]['total'] + po.amount_total"/>
+                            </t>
+                            <t t-foreach="sorted(supplier_data.values(), key=lambda x: x['total'], reverse=True)[:10]" t-as="supplier">
+                                <tr>
+                                    <td><t t-esc="supplier['name']"/></td>
+                                    <td><t t-esc="supplier['count']"/></td>
+                                    <td>$<t t-esc="'%.2f' % supplier['total']"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+
+                    <h3>Ahorros Capturados</h3>
+                    <t t-set="savings" t-value="env['pi.savings.tracker'].search([('date', '&gt;=', week_ago)])"/>
+                    <p><strong>Total de Ahorros:</strong> $<t t-esc="'%.2f' % sum(savings.mapped('amount'))"/></p>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <!-- Supplier Performance Report -->
+    <record id="action_report_supplier_performance" model="ir.actions.report">
+        <field name="name">Reporte de Rendimiento de Proveedores</field>
+        <field name="model">res.partner</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">Purchase_advance_astra.report_supplier_performance</field>
+        <field name="report_file">Purchase_advance_astra.report_supplier_performance</field>
+        <field name="binding_model_id" ref="base.model_res_partner"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_supplier_performance">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="partner">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Reporte de Rendimiento: <t t-esc="partner.name"/></h2>
+                        
+                        <h3>Información General</h3>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Puntuación General:</strong></td>
+                                <td><t t-esc="'%.1f' % partner.supplier_score"/> / 10</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Nivel de Riesgo:</strong></td>
+                                <td><t t-esc="dict(partner._fields['risk_level'].selection).get(partner.risk_level)"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Proveedor Estratégico:</strong></td>
+                                <td><t t-esc="'Sí' if partner.is_strategic else 'No'"/></td>
+                            </tr>
+                        </table>
+
+                        <h3>Historial de Evaluaciones</h3>
+                        <t t-set="scorecards" t-value="env['pi.supplier.scorecard'].search([('partner_id', '=', partner.id)], limit=5, order='date desc')"/>
+                        <t t-if="scorecards">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Calidad</th>
+                                        <th>Entrega</th>
+                                        <th>Precio</th>
+                                        <th>Servicio</th>
+                                        <th>Puntuación</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="scorecards" t-as="sc">
+                                        <tr>
+                                            <td><t t-esc="sc.date"/></td>
+                                            <td><t t-esc="'%.1f' % sc.score_quality"/></td>
+                                            <td><t t-esc="'%.1f' % sc.score_delivery"/></td>
+                                            <td><t t-esc="'%.1f' % sc.score_price"/></td>
+                                            <td><t t-esc="'%.1f' % sc.score_service"/></td>
+                                            <td><strong><t t-esc="'%.1f' % sc.overall_score"/></strong></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </t>
+                        <t t-else="">
+                            <p class="text-muted">No hay evaluaciones registradas.</p>
+                        </t>
+
+                        <h3>Órdenes de Compra Recientes</h3>
+                        <t t-set="recent_pos" t-value="env['purchase.order'].search([('partner_id', '=', partner.id)], limit=10, order='date_order desc')"/>
+                        <t t-if="recent_pos">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Orden</th>
+                                        <th>Fecha</th>
+                                        <th>Monto</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="recent_pos" t-as="po">
+                                        <tr>
+                                            <td><t t-esc="po.name"/></td>
+                                            <td><t t-esc="po.date_order"/></td>
+                                            <td>$<t t-esc="'%.2f' % po.amount_total"/></td>
+                                            <td><t t-esc="po.state"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </t>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    </data>
+</odoo>
